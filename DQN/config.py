@@ -1,0 +1,11 @@
+# Paramètres DQN
+GAMMA = 0.99       # Facteur de discount
+LEARNING_RATE = 1e-4
+BUFFER_SIZE = 1000  # Taille du buffer d'expérience
+BATCH_SIZE = 128    # Taille du batch pour l'apprentissage
+EPSILON_START = 1.0
+EPSILON_END = 0.1
+EPSILON_DECAY = 0.9997
+TARGET_UPDATE = 10  # Mise à jour du réseau cible
+STEP_PER_UPDATE = 640  # Nombre de pas de temps entre chaque mise à jour
+NUM_EPISODES = 10000  # Nombre d'épisodes d'entraînement
