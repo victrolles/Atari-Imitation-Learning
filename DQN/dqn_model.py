@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch
 
 class DQNModel(nn.Module):
     def __init__(self, obs_shape, num_actions):

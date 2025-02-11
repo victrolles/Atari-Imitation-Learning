@@ -46,12 +46,10 @@ class RlOnGym():
             state = prepost_image_state(state)
             total_reward = 0
 
-            if episode != 0 and episode % 50 == 0:
-                print("Recording video")
+            if episode != 0 and episode % 200 == 0:
                 video_path = f"./videos/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}_episode_{episode}"
                 self.env = RecordVideo(self.env, video_folder=video_path, episode_trigger=lambda x: True)
-            elif episode != 0 and (episode-2) % 50 == 0:
-                print("Stop recording video")
+            elif episode != 0 and (episode-2) % 200 == 0:
                 self.env.close()
                 self.env = gym.make(f"ALE/{GAME_NAME}", render_mode="rgb_array")
                 self.env.reset()
@@ -65,13 +63,13 @@ class RlOnGym():
                 total_reward += reward
 
                 if done or truncated:
-                    print(f"done : iteration {t}")
                     break
 
             loss = self.trainer.train()  # Entraînement du réseau
             self.writer.add_scalar("charts/epsilon", epsilon, episode)
             self.writer.add_scalar("charts/loss", loss, episode)
             self.writer.add_scalar("charts/total_reward", total_reward, episode)
+            self.writer.add_scalar("charts/episode_length", t, episode)
 
             epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)  # Réduction epsilon
 

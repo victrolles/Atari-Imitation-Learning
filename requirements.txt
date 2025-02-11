@@ -1,0 +1,5 @@
+gymnasium
+ale-py
+torch
+cv2
+numpy
