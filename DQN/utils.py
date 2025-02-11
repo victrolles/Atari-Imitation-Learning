@@ -3,7 +3,7 @@ import numpy as np
 
 def prepost_image_state(state):
     # Crop the image
-    cropped_state = state[0:154, 8:158]
+    cropped_state = state[1:171, 0:159]
 
     # Resize the image to 128x128
     resized_state = cv2.resize(cropped_state, (128, 128))
