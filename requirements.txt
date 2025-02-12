@@ -1,4 +1,5 @@
 gymnasium
+gymnasium[other]
 ale-py
 torch
 opencv-python

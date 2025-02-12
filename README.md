@@ -19,6 +19,11 @@ venv/Scripts/activate
 pip install -r requirements.txt
 ```
 
+### Start the training
+```bash
+python main.py
+```
+
 ### Open Tensorboard
 ```bash
 tensorboard --logdir=./tensorboard
