@@ -32,6 +32,8 @@ class RlOnGym():
             self.device = torch.device("cpu")
 
         self.training_id = random.randint(0, 1000)
+        print(f"Training ID: {self.training_id}")
+        
         self.agent = Agent(self.training_id, self.obs_shape, self.num_actions, self.device)
         self.trainer = DQNTrainer(self.agent.policy_net, self.agent.target_net, self.device)
 

@@ -1,4 +1,5 @@
 import random
+import os
 
 import torch
 
@@ -29,6 +30,8 @@ class Agent():
             
     def save_model(self, episode):
         if SAVE_MODEL:
+            if not os.path.exists("models"):
+                os.mkdir("models")
             torch.save(self.policy_net.state_dict(), f"models/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}_{episode}.pt")
             print(f"Model saved at episode {episode}")
 

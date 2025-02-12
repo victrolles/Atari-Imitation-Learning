@@ -5,3 +5,4 @@ torch
 opencv-python
 numpy
 tensorboard
+standard-imghdr
