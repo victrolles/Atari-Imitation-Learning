@@ -18,3 +18,8 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+### Open Tensorboard
+```bash
+tensorboard --logdir=./tensorboard
+```
