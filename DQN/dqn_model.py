@@ -1,5 +1,7 @@
 import torch.nn as nn
 
+from DQN.utils import compute_output_size
+
 class DQNModel(nn.Module):
     def __init__(self, obs_shape, num_actions):
         super().__init__()
@@ -11,7 +13,7 @@ class DQNModel(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(4096, 512),
+            nn.Linear(compute_output_size(obs_shape[0]), 512),
             nn.ReLU(),
             nn.Linear(512, 256),
             nn.ReLU(),

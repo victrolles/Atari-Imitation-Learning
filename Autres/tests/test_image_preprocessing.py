@@ -4,7 +4,7 @@ import numpy as np
 
 # Initialize the environment
 import ale_py
-game_name = "Enduro-v5" # "MsPacman-v5" or "Enduro-v5"
+game_name = "MsPacman-v5" # "MsPacman-v5" or "Enduro-v5"
 gym.register_envs(ale_py) 
 env = gym.make(f"ALE/{game_name}", render_mode="rgb_array")
 
@@ -27,7 +27,7 @@ cropped_frame = state_bgr[1:171, 0:159] # MsPacman
 cv2.imwrite(f"Autres/images/{game_name}/cropped_frame.png", cropped_frame)
 
 # Resize the image to 128x128
-resized_frame = cv2.resize(cropped_frame, (128, 128))
+resized_frame = cv2.resize(cropped_frame, (84, 84))
 cv2.imwrite(f"Autres/images/{game_name}/resized_frame.png", resized_frame)
 
 # Convert to grayscale

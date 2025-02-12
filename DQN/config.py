@@ -1,12 +1,21 @@
+# Game parameters
 GAME_NAME = "MsPacman-v5"
 RL_ALGORITHM = "DQN"
-GAMMA = 0.99       # Facteur de discount
+IMAGE_SIZE = 84
+
+# Training parameters
+SAVE_PATH = "./models/DQN_MsPacman-v5_269_1600.pt"
+SAVE_MODEL = True
+LOAD_MODEL = True
+
+# DQN parameters
+GAMMA = 0.99
 LEARNING_RATE = 1e-4
-BUFFER_SIZE = 12000  # Taille du buffer d'expérience
-BATCH_SIZE = 128    # Taille du batch pour l'apprentissage
+BUFFER_SIZE = 12000
+BATCH_SIZE = 128
 EPSILON_START = 1.0
 EPSILON_END = 0.1
 EPSILON_DECAY = 0.9995
-TARGET_UPDATE = 30  # Mise à jour du réseau cible
-STEP_PER_UPDATE = 10000  # Nombre de pas de temps entre chaque mise à jour
-NUM_EPISODES = 15000  # Nombre d'épisodes d'entraînementur
+TARGET_UPDATE = 30
+STEP_PER_UPDATE = 10000
+NUM_EPISODES = 15000

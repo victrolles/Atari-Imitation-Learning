@@ -1,4 +1,5 @@
 import random
+import os
 
 import gymnasium as gym
 from gymnasium.wrappers import RecordVideo
@@ -6,7 +7,7 @@ import ale_py
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM
+from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE
 from DQN.dqn_trainer import DQNTrainer
 from DQN.agent import Agent
 from DQN.utils import prepost_image_state
@@ -19,7 +20,7 @@ class RlOnGym():
         self.env.reset()
         self.action = 0
 
-        self.obs_shape = (128, 128)  # On réduit les images pour accélérer l'entraînement
+        self.obs_shape = (IMAGE_SIZE, IMAGE_SIZE)  # On réduit les images pour accélérer l'entraînement
         self.num_actions = self.env.action_space.n  # Nombre d'actions possibles
         print(f"Num actions: {self.num_actions}")
 
@@ -30,10 +31,10 @@ class RlOnGym():
             print("Training with CPU")
             self.device = torch.device("cpu")
 
-        self.agent = Agent(self.obs_shape, self.num_actions, self.device)
+        self.training_id = random.randint(0, 1000)
+        self.agent = Agent(self.training_id, self.obs_shape, self.num_actions, self.device)
         self.trainer = DQNTrainer(self.agent.policy_net, self.agent.target_net, self.device)
 
-        self.training_id = random.randint(0, 1000)
         self.writer = SummaryWriter(f"./tensorboard/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}")
         self.writer.add_text("Hyperparameters", f"EPSILON_START: {EPSILON_START}, EPSILON_DECAY: {EPSILON_DECAY}, EPSILON_END: {EPSILON_END}, NUM_EPISODES: {NUM_EPISODES}, TARGET_UPDATE: {TARGET_UPDATE}, STEP_PER_UPDATE: {STEP_PER_UPDATE}")
 
@@ -43,21 +44,26 @@ class RlOnGym():
         for episode in range(NUM_EPISODES):
             print(f"Episode {episode}, epsilon: {epsilon:.3f}")
             state, _ = self.env.reset()
-            state = prepost_image_state(state)
+            state = prepost_image_state(state, IMAGE_SIZE)
             total_reward = 0
 
             if episode != 0 and episode % 200 == 0:
                 video_path = f"./videos/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}_episode_{episode}"
                 self.env = RecordVideo(self.env, video_folder=video_path, episode_trigger=lambda x: True)
-            elif episode != 0 and (episode-2) % 200 == 0:
+                self.agent.save_model(episode)
+            elif episode != 2 and (episode-2) % 200 == 0:
                 self.env.close()
                 self.env = gym.make(f"ALE/{GAME_NAME}", render_mode="rgb_array")
                 self.env.reset()
 
+                path_to_video_to_remove = f"./videos/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}_episode_{episode-2}/rl-video-episode-1.mp4"
+                if os.path.exists(path_to_video_to_remove):
+                    os.remove(path_to_video_to_remove)
+
             for t in range(STEP_PER_UPDATE):
                 action = self.agent.select_action(state, epsilon)
                 next_state, reward, done, truncated, _ = self.env.step(action)
-                next_state = prepost_image_state(next_state)
+                next_state = prepost_image_state(next_state, IMAGE_SIZE)
                 self.trainer.experience_memory._append((state, action, reward, next_state, done))
                 state = next_state
                 total_reward += reward
