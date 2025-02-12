@@ -1,5 +1,6 @@
 gymnasium
 ale-py
 torch
-cv2
+opencv-python
 numpy
+tensorboard
