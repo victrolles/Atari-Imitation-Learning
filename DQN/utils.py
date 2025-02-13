@@ -5,10 +5,19 @@ import math
 def prepost_frame(frame, resize_size = 128, game_name = "MsPacman-v5"):
     """Prepost a frame.
 
+    Apply the following steps to a frame:
+    1. Crop the frame.
+    2. Resize the frame.
+    3. Convert the frame to grayscale.
+    4. Normalize the frame.
+
     Args:
         frame (np.ndarray): The frame to prepost. Shape: (H, W, 3)
-        image_size (int): The size of the image.
+        resize_size (int): The size of the image.
         game_name (str): The name of the game.
+
+    Returns:
+        np.ndarray: The preposted frame. Shape: (resize_size, resize_size)
     """
     # Crop the image
     if game_name == "MsPacman-v5":

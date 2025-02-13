@@ -25,10 +25,10 @@ class DQNTrainer():
             states, actions, rewards, next_states, dones = batch
 
             # Convert to tensors
-            states = torch.tensor(states, device=self.device, dtype=torch.float32)
+            states = torch.tensor(np.array(states), device=self.device, dtype=torch.float32)
             actions = torch.tensor(actions, device=self.device, dtype=torch.int64)
             rewards = torch.tensor(rewards, device=self.device, dtype=torch.float32)
-            next_states = torch.tensor(next_states, device=self.device, dtype=torch.float32)
+            next_states = torch.tensor(np.array(next_states), device=self.device, dtype=torch.float32)
             dones = torch.tensor(dones, device=self.device, dtype=torch.float32)
             
             # Compute Q values

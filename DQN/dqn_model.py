@@ -6,7 +6,7 @@ class DQNModel(nn.Module):
     def __init__(self, obs_shape, num_actions):
         super().__init__()
         self.network = nn.Sequential(
-            nn.Conv2d(4, 32, 3, stride=4), # 1 canal d'entrée pour grayscale
+            nn.Conv2d(obs_shape[0], 32, 3, stride=4), # 1 canal d'entrée pour grayscale
             nn.ReLU(),
             nn.Conv2d(32, 64, 3, stride=3),
             nn.ReLU(),
