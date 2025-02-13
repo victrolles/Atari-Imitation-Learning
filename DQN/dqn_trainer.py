@@ -17,28 +17,30 @@ class DQNTrainer():
 
         self.experience_memory = ExperienceMemory(BUFFER_SIZE)
         self.optimizer = optim.Adam(policy_net.parameters(), lr=LEARNING_RATE)
-        self.loss_fn = nn.MSELoss()
+        self.criterion = nn.MSELoss()
 
     def train(self):
         while len(self.experience_memory) > BATCH_SIZE:
             batch = self.experience_memory.sample(BATCH_SIZE)
             states, actions, rewards, next_states, dones = batch
 
-            states = torch.tensor(np.array(states), device=self.device, dtype=torch.float32)
-            actions = torch.tensor(actions, device=self.device, dtype=torch.int64).unsqueeze(1)
-            rewards = torch.tensor(rewards, device=self.device, dtype=torch.float32).unsqueeze(1)
-            next_states = torch.tensor(np.array(next_states), device=self.device, dtype=torch.float32)
-            dones = torch.tensor(dones, device=self.device, dtype=torch.float32).unsqueeze(1)
+            # Convert to tensors
+            states = torch.tensor(states, device=self.device, dtype=torch.float32)
+            actions = torch.tensor(actions, device=self.device, dtype=torch.int64)
+            rewards = torch.tensor(rewards, device=self.device, dtype=torch.float32)
+            next_states = torch.tensor(next_states, device=self.device, dtype=torch.float32)
+            dones = torch.tensor(dones, device=self.device, dtype=torch.float32)
+            
+            # Compute Q values
+            q_values = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
 
-            q_values = self.policy_net(states).gather(1, actions)
-            next_q_values = self.target_net(next_states).max(1)[0]
+            # Compute the expected Q values
+            with torch.no_grad():
+                next_q_values = self.target_net(next_states).max(1)[0].detach()
+                expected_q_values = rewards + (GAMMA * next_q_values * (1 - dones))
 
-            states = states.unsqueeze(1)
-            next_states = next_states.unsqueeze(1)
-
-            expected_q_values = rewards + (GAMMA * next_q_values * (1 - dones))
-
-            loss = self.loss_fn(q_values, expected_q_values.detach())
+            # Compute the loss
+            loss = self.criterion(q_values, expected_q_values)
 
             loss_value = loss.item()
 
