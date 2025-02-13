@@ -7,10 +7,11 @@ import ale_py
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE
+from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE, FRAME_STACK_SIZE
 from DQN.dqn_trainer import DQNTrainer
 from DQN.agent import Agent
-from DQN.utils import prepost_image_state
+from DQN.utils import prepost_frame
+from DQN.frame_stacker import FrameStacker
 
 class RlOnGym():
 
@@ -20,7 +21,7 @@ class RlOnGym():
         self.env.reset()
         self.action = 0
 
-        self.obs_shape = (IMAGE_SIZE, IMAGE_SIZE)  # On réduit les images pour accélérer l'entraînement
+        self.obs_shape = (FRAME_STACK_SIZE, IMAGE_SIZE, IMAGE_SIZE)  # On réduit les images pour accélérer l'entraînement
         self.num_actions = self.env.action_space.n  # Nombre d'actions possibles
         print(f"Num actions: {self.num_actions}")
 
@@ -33,6 +34,8 @@ class RlOnGym():
 
         self.training_id = random.randint(0, 1000)
         print(f"Training ID: {self.training_id}")
+
+        self.frame_stacker = FrameStacker(stack_size=FRAME_STACK_SIZE)
         
         self.agent = Agent(self.training_id, self.obs_shape, self.num_actions, self.device)
         self.trainer = DQNTrainer(self.agent.policy_net, self.agent.target_net, self.device)
@@ -45,8 +48,11 @@ class RlOnGym():
         epsilon = EPSILON_START
         for episode in range(NUM_EPISODES):
             print(f"Episode {episode}, epsilon: {epsilon:.3f}")
-            state, _ = self.env.reset()
-            state = prepost_image_state(state, IMAGE_SIZE)
+
+            frame, _ = self.env.reset()
+            preprocessed_frame = prepost_frame(frame, IMAGE_SIZE)
+            stacked_preprocessed_frames = self.frame_stacker.reset(preprocessed_frame)
+            
             total_reward = 0
 
             if episode != 0 and episode % 200 == 0:
@@ -63,11 +69,13 @@ class RlOnGym():
                     os.remove(path_to_video_to_remove)
 
             for t in range(STEP_PER_UPDATE):
-                action = self.agent.select_action(state, epsilon)
-                next_state, reward, done, truncated, _ = self.env.step(action)
-                next_state = prepost_image_state(next_state, IMAGE_SIZE)
-                self.trainer.experience_memory._append((state, action, reward, next_state, done))
-                state = next_state
+                action = self.agent.select_action(stacked_preprocessed_frames, epsilon)
+                next_frame, reward, done, truncated, _ = self.env.step(action)
+                next_preprocessed_frame = prepost_frame(next_frame, IMAGE_SIZE)
+                next_stacked_preprocessed_frames = self.frame_stacker.add(next_preprocessed_frame)
+
+                self.trainer.experience_memory._append((stacked_preprocessed_frames, action, reward, next_stacked_preprocessed_frames, done))
+                stacked_preprocessed_frames = next_stacked_preprocessed_frames
                 total_reward += reward
 
                 if done or truncated:
@@ -89,8 +97,6 @@ class RlOnGym():
 
         self.writer.close()
         self.env.close()
-
-    
 
 if __name__ == '__main__':
     rl_on_gym = RlOnGym()

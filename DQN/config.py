@@ -2,6 +2,7 @@
 GAME_NAME = "MsPacman-v5"
 RL_ALGORITHM = "DQN"
 IMAGE_SIZE = 84
+FRAME_STACK_SIZE = 4
 
 # Training parameters
 SAVE_PATH = "./models/DQN_MsPacman-v5_269_1600.pt"

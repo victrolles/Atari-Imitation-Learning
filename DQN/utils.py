@@ -2,28 +2,32 @@ import cv2
 import numpy as np
 import math
 
-def prepost_image_state(state, image_size = 128, game_name = "MsPacman-v5"):
+def prepost_frame(frame, resize_size = 128, game_name = "MsPacman-v5"):
+    """Prepost a frame.
+
+    Args:
+        frame (np.ndarray): The frame to prepost. Shape: (H, W, 3)
+        image_size (int): The size of the image.
+        game_name (str): The name of the game.
+    """
     # Crop the image
     if game_name == "MsPacman-v5":
-        cropped_state = state[1:171, 0:159]
+        cropped_frame = frame[1:171, 0:159]
     elif game_name == "Enduro-v5":
-        cropped_state = state[0:154, 8:158]
+        cropped_frame = frame[0:154, 8:158]
     else:
         raise ValueError("Invalid game name")
 
     # Resize the image to 128x128
-    resized_state = cv2.resize(cropped_state, (image_size, image_size))
+    resized_frame = cv2.resize(cropped_frame, (resize_size, resize_size))
 
     # Convert to grayscale
-    gray_state = cv2.cvtColor(resized_state, cv2.COLOR_BGR2GRAY)
+    gray_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
 
     # Normalize the image
-    normalized_state = gray_state.astype(np.float32) / 255.0
+    normalized_frame = gray_frame.astype(np.float32) / 255.0
 
-    # Add one dimension to the image
-    one_channel_state = np.expand_dims(normalized_state, axis=0)
-
-    return one_channel_state
+    return normalized_frame
 
 def compute_output_size(H):
     # Première couche : Conv2d(1, 32, 3, stride=4)
