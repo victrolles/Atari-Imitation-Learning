@@ -20,6 +20,8 @@ class DQNTrainer():
         self.criterion = nn.MSELoss()
 
     def train(self):
+        list_loss = []
+
         while len(self.experience_memory) > BATCH_SIZE:
             batch = self.experience_memory.sample(BATCH_SIZE)
             states, actions, rewards, next_states, dones = batch
@@ -41,11 +43,10 @@ class DQNTrainer():
 
             # Compute the loss
             loss = self.criterion(q_values, expected_q_values)
-
-            loss_value = loss.item()
+            list_loss.append(loss.item())
 
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
-        return loss_value
+        return np.mean(list_loss) if len(list_loss) > 0 else 0.0

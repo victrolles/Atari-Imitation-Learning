@@ -1,12 +1,26 @@
-import torch
+import numpy as np
+import matplotlib.pyplot as plt
 
-q_values = torch.tensor([
-    [10.0, 20.0, 30.0],  # Q-values for state 1
-    [5.0, 15.0, 25.0]    # Q-values for state 2
-])  # Shape: (2, 3) -> 2 states, 3 actions each
+def linear_schedule(start_e, end_e, duration, t):
+    slope = (end_e - start_e) / duration
+    return max(slope * t + start_e, end_e)
 
-actions = torch.tensor([[2], [1]])  # Chosen action indices (column-wise selection)
+# Paramètres
+start_e = 1.0    # Valeur initiale (ex: exploration max)
+end_e = 0.1      # Valeur finale (ex: exploration min)
+duration = 1000  # Nombre d'itérations pour décroître
 
-selected_q_values = q_values.gather(1, actions)  # Select Q-values for chosen actions
+# Génération des valeurs sur 1500 étapes
+timesteps = np.arange(1500)
+values = [linear_schedule(start_e, end_e, duration, t) for t in timesteps]
 
-print(selected_q_values)
+# Visualisation
+plt.figure(figsize=(8, 4))
+plt.plot(timesteps, values, label="Exploration Rate")
+plt.axvline(x=duration, color='r', linestyle='--', label="End of decay")
+plt.xlabel("Timesteps")
+plt.ylabel("Value")
+plt.title("Linear Decay Schedule")
+plt.legend()
+plt.grid()
+plt.show()

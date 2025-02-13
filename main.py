@@ -7,7 +7,7 @@ import ale_py
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE, FRAME_STACK_SIZE
+from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE, FRAME_STACK_SIZE, SAVE_RATE
 from DQN.dqn_trainer import DQNTrainer
 from DQN.agent import Agent
 from DQN.utils import prepost_frame
@@ -55,11 +55,11 @@ class RlOnGym():
             
             total_reward = 0
 
-            if episode != 0 and episode % 200 == 0:
+            if episode != 0 and episode % SAVE_RATE == 0:
                 video_path = f"./videos/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}_episode_{episode}"
                 self.env = RecordVideo(self.env, video_folder=video_path, episode_trigger=lambda x: True)
                 self.agent.save_model(episode)
-            elif episode != 2 and (episode-2) % 200 == 0:
+            elif episode != 2 and (episode-2) % SAVE_RATE == 0:
                 self.env.close()
                 self.env = gym.make(f"ALE/{GAME_NAME}", render_mode="rgb_array")
                 self.env.reset()
