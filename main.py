@@ -7,10 +7,10 @@ import ale_py
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE, FRAME_STACK_SIZE, SAVE_RATE
+from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, STEP_PER_UPDATE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE, FRAME_STACK_SIZE, SAVE_RATE, FRAME_SKIP_SIZE
 from DQN.dqn_trainer import DQNTrainer
 from DQN.agent import Agent
-from DQN.utils import prepost_frame
+from DQN.utils import prepost_frame, scale_reward
 from DQN.frame_stacker import FrameStacker
 
 class RlOnGym():
@@ -22,7 +22,7 @@ class RlOnGym():
         self.action = 0
 
         self.obs_shape = (FRAME_STACK_SIZE, IMAGE_SIZE, IMAGE_SIZE)  # On réduit les images pour accélérer l'entraînement
-        self.num_actions = self.env.action_space.n  # Nombre d'actions possibles
+        self.num_actions = 5  # Nombre d'actions possibles
         print(f"Num actions: {self.num_actions}")
 
         if torch.cuda.is_available():
@@ -35,7 +35,7 @@ class RlOnGym():
         self.training_id = random.randint(0, 1000)
         print(f"Training ID: {self.training_id}")
 
-        self.frame_stacker = FrameStacker(stack_size=FRAME_STACK_SIZE)
+        self.frame_stacker = FrameStacker(stack_size=FRAME_STACK_SIZE, frame_skip_size=FRAME_SKIP_SIZE)
         
         self.agent = Agent(self.training_id, self.obs_shape, self.num_actions, self.device)
         self.trainer = DQNTrainer(self.agent.policy_net, self.agent.target_net, self.device)
@@ -74,18 +74,20 @@ class RlOnGym():
                 next_preprocessed_frame = prepost_frame(next_frame, IMAGE_SIZE)
                 next_stacked_preprocessed_frames = self.frame_stacker.add(next_preprocessed_frame)
 
-                self.trainer.experience_memory._append((stacked_preprocessed_frames, action, reward, next_stacked_preprocessed_frames, done))
+                self.trainer.experience_memory._append((stacked_preprocessed_frames, action, scale_reward(reward), next_stacked_preprocessed_frames, done))
                 stacked_preprocessed_frames = next_stacked_preprocessed_frames
                 total_reward += reward
 
                 if done or truncated:
                     break
 
-            loss = self.trainer.train()  # Entraînement du réseau
+            mean_loss, mean_q_value = self.trainer.train()  # Entraînement du réseau
             self.writer.add_scalar("charts/epsilon", epsilon, episode)
-            self.writer.add_scalar("charts/loss", loss, episode)
             self.writer.add_scalar("charts/total_reward", total_reward, episode)
             self.writer.add_scalar("charts/episode_length", t, episode)
+
+            self.writer.add_scalar("losses/mean_loss", mean_loss, episode)
+            self.writer.add_scalar("losses/mean_q_value", mean_q_value, episode)
 
             epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)  # Réduction epsilon
 

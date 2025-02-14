@@ -16,11 +16,12 @@ class DQNTrainer():
         self.device = device
 
         self.experience_memory = ExperienceMemory(BUFFER_SIZE)
-        self.optimizer = optim.Adam(policy_net.parameters(), lr=LEARNING_RATE)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=LEARNING_RATE)
         self.criterion = nn.MSELoss()
 
     def train(self):
         list_loss = []
+        list_q_values = []
 
         while len(self.experience_memory) > BATCH_SIZE:
             batch = self.experience_memory.sample(BATCH_SIZE)
@@ -35,6 +36,7 @@ class DQNTrainer():
             
             # Compute Q values
             q_values = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+            list_q_values.append(q_values.mean().item())
 
             # Compute the expected Q values
             with torch.no_grad():
@@ -49,4 +51,4 @@ class DQNTrainer():
             loss.backward()
             self.optimizer.step()
 
-        return np.mean(list_loss) if len(list_loss) > 0 else 0.0
+        return np.mean(list_loss), np.mean(list_q_values)

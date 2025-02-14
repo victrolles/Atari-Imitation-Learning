@@ -8,8 +8,6 @@ import ale_py
 game_name = "MsPacman-v5" # "MsPacman-v5" or "Enduro-v5"
 gym.register_envs(ale_py) 
 env = gym.make(f"ALE/{game_name}", render_mode="rgb_array")
-print(env.unwrapped.get_action_meanings())
-
 # create a folder to save the images
 import os
 os.makedirs(f"Autres/images/{game_name}_2f", exist_ok=True)
@@ -44,9 +42,12 @@ def prepost_frame(frame, resize_size = 128, game_name = "MsPacman-v5"):
 from collections import deque
 
 class FrameStacker:
-    def __init__(self, stack_size=4):
+    def __init__(self, stack_size=4, frame_skipping=4):
         self.stack_size = stack_size
-        self.frames = deque(maxlen=stack_size)
+        self.frame_skipping = frame_skipping
+        print(f"Frame skipping: {frame_skipping}")
+        self.size = stack_size*(frame_skipping - 1) + 1
+        self.frames = deque(maxlen=self.size)
 
     def reset(self, frame):
         """
@@ -57,8 +58,10 @@ class FrameStacker:
         """
 
         self.frames.clear()
-        for _ in range(self.stack_size):
+        for _ in range(self.size):
             self.frames.append(frame)
+
+        return np.stack(list(self.frames)[: : self.frame_skipping])
 
     def add(self, frame):
         """
@@ -68,6 +71,7 @@ class FrameStacker:
             frame (np.ndarray): The new frame.
         """
         self.frames.append(frame)
+        return np.stack(list(self.frames)[: : self.frame_skipping])
 
     def get(self):
         """
@@ -76,7 +80,7 @@ class FrameStacker:
         Returns:
             np.ndarray: The stacked frames.
         """
-        return np.stack(self.frames)
+        return np.stack(list(self.frames)[: : self.frame_skipping])
 
 
 import matplotlib.pyplot as plt
@@ -108,8 +112,11 @@ state, _ = env.reset()
 preprocessed_frame = prepost_frame(state, game_name = game_name)
 frame_stacker.reset(preprocessed_frame)
 
-for _ in range(70):
+for _ in range(90):
     state, _, _, _, _ = env.step(2)
+    # state, _, _, _, _ = env.step(2)
+    # state, _, _, _, _ = env.step(2)
+    # state, _, _, _, _ = env.step(2)
     preprocessed_frame = prepost_frame(state, game_name = game_name)
     frame_stacker.add(preprocessed_frame)
 
