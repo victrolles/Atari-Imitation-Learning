@@ -1,3 +1,4 @@
+import numpy as np
 import random
 import os
 
@@ -20,13 +21,15 @@ class Agent():
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
-    def select_action(self, state, epsilon):
+    def select_action(self, state: np.ndarray, epsilon) -> int:
         if random.random() < epsilon:
             return random.randrange(self.num_actions)  # Action aléatoire
         else:
             with torch.no_grad():
                 state = torch.tensor(state, device=self.device, dtype=torch.float32).unsqueeze(0)
-                return self.policy_net(state).argmax(dim=1).item()  # Action du réseau
+                output = self.policy_net(state).argmax(dim=1).cpu().item()
+                return int(output)
+
             
     def save_model(self, episode):
         if SAVE_MODEL:
