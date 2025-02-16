@@ -33,7 +33,7 @@ class DQNTrainer():
             # Compute the expected Q values
             with torch.no_grad():
                 next_q_values = self.target_net(data['next_states']).max(1)[0].detach()
-                expected_q_values = data['rewards'] + (GAMMA * next_q_values * (1 - data['dones']))
+                expected_q_values = data['rewards'].flatten() + (GAMMA * next_q_values * (1 - data['dones'].flatten()))
 
             # Compute the loss
             loss = self.criterion(q_values, expected_q_values)

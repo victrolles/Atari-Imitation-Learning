@@ -8,7 +8,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
-from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, MAX_STEP_PER_EPISODE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE, FRAME_STACK_SIZE, SAVE_RATE, FRAME_SKIP_SIZE, BUFFER_SIZE
+from DQN.config import EPSILON_START, EPSILON_DECAY, EPSILON_END, NUM_EPISODES, TARGET_UPDATE, MAX_STEP_PER_EPISODE, GAME_NAME, RL_ALGORITHM, IMAGE_SIZE, FRAME_STACK_SIZE, SAVE_RATE, FRAME_SKIP_SIZE, BUFFER_SIZE, ITER_PER_EPISODE
 from DQN.dqn_trainer import DQNTrainer
 from DQN.agent import Agent
 from DQN.utils import prepost_frame, scale_reward
@@ -47,6 +47,8 @@ class RlOnGym():
         self.writer.add_text("Hyperparameters", f"EPSILON_START: {EPSILON_START}, EPSILON_DECAY: {EPSILON_DECAY}, EPSILON_END: {EPSILON_END}, NUM_EPISODES: {NUM_EPISODES}, TARGET_UPDATE: {TARGET_UPDATE}, MAX_STEP_PER_EPISODE: {MAX_STEP_PER_EPISODE}")
 
     def train_loop(self):
+        env_step = 0
+        training_iter = 0
         epsilon = EPSILON_START
         for episode in range(NUM_EPISODES):
             print(f"Episode {episode}, epsilon: {epsilon:.3f}")
@@ -88,12 +90,17 @@ class RlOnGym():
                 self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
 
             # Log the results
+            env_step += t
+            training_iter += ITER_PER_EPISODE
+
             self.writer.add_scalar("charts/epsilon", epsilon, episode)
             self.writer.add_scalar("charts/episode_length", t, episode)
+            self.writer.add_scalar("losses/env_step", env_step, episode)
 
             self.writer.add_scalar("losses/mean_loss", mean_loss, episode)
             self.writer.add_scalar("losses/mean_q_value", mean_q_value, episode)
-            self.writer.add_scalar("losses/buffer_size", len(self.replay_buffer), episode)      
+            self.writer.add_scalar("losses/buffer_size", len(self.replay_buffer), episode)
+            self.writer.add_scalar("losses/training_iter", training_iter, episode)     
 
         self.writer.close()
         self.env.close()
