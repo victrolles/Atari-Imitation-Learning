@@ -1,8 +1,9 @@
 import numpy as np
+from numpy._typing import _ShapeLike
 import torch
 
 class ReplayBuffer:
-    def __init__(self, max_capacity: int, state_dim, action_dim, device):
+    def __init__(self, max_capacity: int, state_dim: _ShapeLike, action_dim: _ShapeLike, device: torch.device):
         self.max_capacity = max_capacity
         self.device = device
         self.index = 0

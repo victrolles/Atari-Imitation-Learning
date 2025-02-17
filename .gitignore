@@ -1,5 +1,6 @@
-DQN/__pycache__/
-tensorboard/
-videos/
-models/
+atari_rl/dqn/__pycache__/
+atari_rl/rl/__pycache__/
+atari_rl/dilqn/__pycache__/
+archives/
+results/
 venv/

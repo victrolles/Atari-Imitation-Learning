@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from DQN.utils import compute_output_size
+from atari_rl.rl.utils import compute_output_size
 
 class DQNModel(nn.Module):
     def __init__(self, obs_shape, num_actions):

@@ -5,27 +5,41 @@ import torch.nn as nn
 import torch
 import numpy as np
 
-from DQN.config import BATCH_SIZE, GAMMA, LEARNING_RATE, ITER_PER_EPISODE
-from DQN.replay_buffer import ReplayBuffer
-from DQN.dqn_model import DQNModel
+from atari_rl.rl.replay_buffer import ReplayBuffer
+from atari_rl.dqn.dqn_model import DQNModel
 
 class DQNTrainer():
 
-    def __init__(self, policy_net: DQNModel, target_net: DQNModel, replay_buffer: ReplayBuffer, device):
+    def __init__(self,
+                 policy_net: DQNModel,
+                 target_net: DQNModel,
+                 replay_buffer: ReplayBuffer,
+                 lr: float,
+                 gamma: float,
+                 batch_size: int,
+                 iter_per_episode: int,
+                 device: torch.device) -> None:
+        
         self.policy_net = policy_net
         self.target_net = target_net
         self.replay_buffer = replay_buffer
+
+        self.lr = lr
+        self.gamma = gamma
+        self.batch_size = batch_size
+        self.iter_per_episode = iter_per_episode
+
         self.device = device
 
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=LEARNING_RATE)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
 
     def train(self):
         list_loss = []
         list_q_values = []
 
-        for _ in range(ITER_PER_EPISODE):
-            data = self.replay_buffer.sample(BATCH_SIZE)
+        for _ in range(self.iter_per_episode):
+            data = self.replay_buffer.sample(self.batch_size)
             
             # Compute Q values
             q_values = self.policy_net(data['states']).gather(1, data['actions']).squeeze(1)
@@ -33,7 +47,7 @@ class DQNTrainer():
             # Compute the expected Q values
             with torch.no_grad():
                 next_q_values = self.target_net(data['next_states']).max(1)[0].detach()
-                expected_q_values = data['rewards'].flatten() + (GAMMA * next_q_values * (1 - data['dones'].flatten()))
+                expected_q_values = data['rewards'].flatten() + (self.gamma * next_q_values * (1 - data['dones'].flatten()))
 
             # Compute the loss
             loss = self.criterion(q_values, expected_q_values)
