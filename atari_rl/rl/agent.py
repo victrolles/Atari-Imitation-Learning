@@ -66,6 +66,6 @@ class Agent():
             model_full_path = f"{model_path}/{model_name}.pt"
             print(f"Model loaded from {model_full_path}")
 
-            self.policy_net.load_state_dict(torch.load(model_path))
+            self.policy_net.load_state_dict(torch.load(model_full_path, weights_only=True))
             self.target_net.load_state_dict(self.policy_net.state_dict())
             self.target_net.eval()

@@ -1,5 +1,4 @@
 import random
-import os
 
 import gymnasium as gym
 from gymnasium.wrappers import RecordVideo
@@ -30,11 +29,11 @@ LEARNING_RATE = 1e-4
 BUFFER_SIZE = 100000
 BATCH_SIZE = 32
 EPSILON_START = 1.0
-EPSILON_END = 0.05
+EPSILON_END = 0.1
 EPSILON_DECAY = 0.9995
 TARGET_UPDATE = 3
 MAX_STEP_PER_EPISODE = 10000
-ITER_PER_EPISODE = 100
+ITER_PER_EPISODE = 200
 
 NUM_EPISODES = 15000
 USE_DETERMINISTIC = False
@@ -44,12 +43,12 @@ TEMPERATURE = 1
 MODEL_NAME = "DQN_MsPacman-v5_290_10700.pt"
 SAVE_MODEL = True
 LOAD_MODEL = False
-EVAL_RATE = 10
+EVAL_RATE = 200
 
 NUM_EPISODES_EVAL = 10
 EPSILON_EVAL = 0.05
 USE_DETERMINISTIC_EVAL = False
-USE_EPSILON_EVAL = False
+USE_EPSILON_EVAL = True
 TEMPERATURE_EVAL = 1
 
 class DQNOnGym():
@@ -57,7 +56,7 @@ class DQNOnGym():
     def __init__(self):
         gym.register_envs(ale_py)
         
-        obs_shape = (FRAME_STACK_SIZE, IMAGE_SIZE, IMAGE_SIZE)  # On réduit les images pour accélérer l'entraînement
+        obs_shape = (FRAME_STACK_SIZE, IMAGE_SIZE, IMAGE_SIZE)
         print(f"Observation Shape : {obs_shape}, Num actions: {NUM_ACTIONS}")
 
         if torch.cuda.is_available():
@@ -94,8 +93,8 @@ class DQNOnGym():
                                   self.device)
 
         self.writer = SummaryWriter(f"./results/tensorboard/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}")
-        self.writer.add_text("Hyperparameters", f"EPSILON_START: {EPSILON_START}, EPSILON_DECAY: {EPSILON_DECAY}, EPSILON_END: {EPSILON_END}, NUM_EPISODES: {NUM_EPISODES}, TARGET_UPDATE: {TARGET_UPDATE}, MAX_STEP_PER_EPISODE: {MAX_STEP_PER_EPISODE}")
-
+        self.writer.add_text("Hyperparameters",f"BUFFER_SIZE: {BUFFER_SIZE}, BATCH_SIZE: {BATCH_SIZE}, LEARNING_RATE: {LEARNING_RATE}, GAMMA: {GAMMA}, EPSILON_START: {EPSILON_START}, EPSILON_END: {EPSILON_END}, EPSILON_DECAY: {EPSILON_DECAY}, TARGET_UPDATE: {TARGET_UPDATE}, MAX_STEP_PER_EPISODE: {MAX_STEP_PER_EPISODE}, ITER_PER_EPISODE: {ITER_PER_EPISODE}, NUM_EPISODES: {NUM_EPISODES}, USE_DETERMINISTIC: {USE_DETERMINISTIC}, TEMPERATURE: {TEMPERATURE}, EVAL_RATE: {EVAL_RATE}, NUM_EPISODES_EVAL: {NUM_EPISODES_EVAL}, EPSILON_EVAL: {EPSILON_EVAL}, USE_DETERMINISTIC_EVAL: {USE_DETERMINISTIC_EVAL}, USE_EPSILON_EVAL: {USE_EPSILON_EVAL}, TEMPERATURE_EVAL: {TEMPERATURE_EVAL}")
+    
     def train_loop(self):
         env = gym.make(f"ALE/{GAME_NAME}", render_mode="rgb_array")
         env.reset()

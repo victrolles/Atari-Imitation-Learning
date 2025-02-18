@@ -20,8 +20,11 @@ class ExpertDataset:
         
         self.expert_folder = expert_folder
         self.expert_name = expert_name
+        self.expert_path = f"{self.expert_folder}/{self.expert_name}.h5"
+
         self.obs_shape = obs_shape
         self.num_actions = num_actions
+
         self.dataset_initialized = False
         self.size = 0
 
@@ -35,7 +38,7 @@ class ExpertDataset:
             
         self.expert_path = f"{self.expert_folder}/{self.expert_name}.h5"
         with h5py.File(self.expert_path, "w") as h5f:
-            h5f.create_dataset("states", shape=(0,) + self.obs_shape, maxshape=(None,) + self.obs_shape, dtype=np.uint8)
+            h5f.create_dataset("states", shape=(0,) + self.obs_shape, maxshape=(None,) + self.obs_shape, dtype=np.float32)
             h5f.create_dataset("actions", shape=(0,), maxshape=(None,), dtype=np.int32)
             self.dataset_initialized = True
     
@@ -62,7 +65,7 @@ class ExpertDataset:
         os.rename(self.expert_path, new_filename)
         self.expert_path = new_filename
     
-    def load(self, size: int = None):
+    def load(self, size: int = None) -> list[StateAction]:
         """Load all or part of the dataset."""
         with h5py.File(self.expert_path, "r") as h5f:
             if size is None or size > h5f["states"].shape[0]:
@@ -73,12 +76,27 @@ class ExpertDataset:
             
         return [StateAction(state, action) for state, action in zip(states, actions)]
     
-    def sample(self, batch_size: int):
+    def sample(self, batch_size: int) -> list[StateAction]:
         """Sample a batch of state-action pairs randomly from the dataset."""
         with h5py.File(self.expert_path, "r") as h5f:
             num_samples = h5f["states"].shape[0]
-            indices = random.sample(range(num_samples), batch_size)
+            indices = sorted(random.sample(range(num_samples), batch_size))
             states = h5f["states"][indices]
             actions = h5f["actions"][indices]
             
         return [StateAction(state, action) for state, action in zip(states, actions)]
+
+# Example of use and verification  
+if __name__ == "__main__":
+    dataset = ExpertDataset((4, 4), 4)
+    dataset.create()
+    
+    list_state_action = [StateAction(np.random.randint(0, 255, (4, 4)), 2) for _ in range(5)]
+    dataset.add(list_state_action)
+    print("list state action")
+    print(list_state_action)
+    
+    print("dataset")
+    print(len(dataset))
+    print(dataset.load())
+    print(dataset.sample(3))

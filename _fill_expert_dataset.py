@@ -7,7 +7,7 @@ from atari_rl.rl.agent import Agent
 from atari_rl.rl.utils import prepost_frame
 from atari_rl.rl.frame_stacker import FrameStacker
 
-NUM_EPISODES = 100
+NUM_EPISODES = 40
 
 # Game parameters
 GAME_NAME = "MsPacman-v5"
@@ -15,6 +15,8 @@ NUM_ACTIONS = 5
 MAX_STEP_PER_EPISODE = 10000
 
 # Agent parameters
+MODEL_PATH = "./results/models"
+MODEL_NAME = "DQN_MsPacman-v5_210/episode_8000"
 IMAGE_SIZE = 84
 FRAME_STACK_SIZE = 4
 FRAME_SKIP_SIZE = 4
@@ -47,6 +49,7 @@ class Main():
             self.device = torch.device("cpu")
 
         self.agent = Agent(obs_shape, NUM_ACTIONS, self.device)
+        self.agent.load_model(MODEL_PATH, MODEL_NAME)
         self.frame_stacker = FrameStacker(stack_size=FRAME_STACK_SIZE, frame_skip_size=FRAME_SKIP_SIZE)
         self.expert_dataset = ExpertDataset(obs_shape,
                                             NUM_ACTIONS,
