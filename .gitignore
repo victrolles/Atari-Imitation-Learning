@@ -1,6 +1,6 @@
 atari_rl/dqn/__pycache__/
 atari_rl/rl/__pycache__/
-atari_rl/dilqn/__pycache__/
+atari_rl/il/__pycache__/
 archives/
 results/
 venv/

@@ -52,7 +52,7 @@ USE_DETERMINISTIC_EVAL = False
 USE_EPSILON_EVAL = False
 TEMPERATURE_EVAL = 1
 
-class RlOnGym():
+class DQNOnGym():
 
     def __init__(self):
         gym.register_envs(ale_py)
@@ -225,5 +225,5 @@ class RlOnGym():
         env_eval.close()
 
 if __name__ == '__main__':
-    rl_on_gym = RlOnGym()
-    rl_on_gym.train_loop()
+    dqn_on_gym = DQNOnGym()
+    dqn_on_gym.train_loop()
