@@ -1,6 +1,7 @@
 import numpy as np
 from numpy._typing import _ShapeLike
 import torch
+import time
 
 class ReplayBuffer:
     def __init__(self, max_capacity: int, state_dim: _ShapeLike, action_dim: _ShapeLike, device: torch.device):
@@ -55,13 +56,44 @@ class ReplayBuffer:
             A dictionary containing the sampled batch of experiences. (states, actions, rewards, next_states, dones)
         """
         indices = np.random.choice(self.size, batch_size, replace=False)
-        return {
-        "states": torch.tensor(self.states[indices], dtype=torch.float32, device=self.device, non_blocking=True),
-        "actions": torch.tensor(self.actions[indices], dtype=torch.long, device=self.device, non_blocking=True),
-        "rewards": torch.tensor(self.rewards[indices], dtype=torch.float32, device=self.device, non_blocking=True),
-        "next_states": torch.tensor(self.next_states[indices], dtype=torch.float32, device=self.device, non_blocking=True),
-        "dones": torch.tensor(self.dones[indices], dtype=torch.float32, device=self.device, non_blocking=True),
-    }
+        delta_time = time.time()
+        states =self.states[indices]
+        actions = self.actions[indices]
+        rewards = self.rewards[indices]
+        next_states = self.next_states[indices]
+        dones = self.dones[indices]
+        print(f"Sampling time: {time.time() - delta_time:.3f}")
+        delta_time = time.time()
+        torch_states = torch.tensor(states, dtype=torch.float32)
+        torch_actions = torch.tensor(actions, dtype=torch.long)
+        torch_rewards = torch.tensor(rewards, dtype=torch.float32)
+        torch_next_states = torch.tensor(next_states, dtype=torch.float32)
+        torch_dones = torch.tensor(dones, dtype=torch.float32)
+        print(f"Converting time: {time.time() - delta_time:.3f}")
+        delta_time = time.time()
+        torch_states = torch_states.to(self.device)
+        torch_actions = torch_actions.to(self.device)
+        torch_rewards = torch_rewards.to(self.device)
+        torch_next_states = torch_next_states.to(self.device)
+        torch_dones = torch_dones.to(self.device)
+        print(f"Moving time: {time.time() - delta_time:.3f}")
+        delta_time = time.time()
+        dict = {
+            "states": torch_states,
+            "actions": torch_actions,
+            "rewards": torch_rewards,
+            "next_states": torch_next_states,
+            "dones": torch_dones
+        }
+        print(f"Dict time: {time.time() - delta_time:.3f}")
+        return dict
+    #     return {
+    #     "states": torch.tensor(self.states[indices], dtype=torch.float32).to(self.device),
+    #     "actions": torch.tensor(self.actions[indices], dtype=torch.long).to(self.device),
+    #     "rewards": torch.tensor(self.rewards[indices], dtype=torch.float32).to(self.device),
+    #     "next_states": torch.tensor(self.next_states[indices], dtype=torch.float32).to(self.device),
+    #     "dones": torch.tensor(self.dones[indices], dtype=torch.float32).to(self.device),
+    # }
 
     def __len__(self):
         """Return the number of stored samples."""

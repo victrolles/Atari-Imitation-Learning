@@ -1,4 +1,5 @@
 import random
+import time
 
 import gymnasium as gym
 from gymnasium.wrappers import RecordVideo
@@ -27,7 +28,7 @@ FRAME_SKIP_SIZE = 4
 GAMMA = 0.99
 LEARNING_RATE = 1e-4
 BUFFER_SIZE = 50000
-BATCH_SIZE = 32
+BATCH_SIZE = 256
 EPSILON_START = 1.0
 EPSILON_END = 0.1
 EPSILON_DECAY = 0.999
@@ -106,10 +107,15 @@ class DQNOnGym():
             print(f"Episode {episode}, epsilon: {epsilon:.3f}, total_reward: {int(total_reward)}")
             total_reward = 0
 
+            delta_time = time.time()
+
             # Process the first frame
             frame, _ = env.reset()
             preprocessed_frame = prepost_frame(frame, IMAGE_SIZE)
             stacked_preprocessed_frames = self.frame_stacker.reset(preprocessed_frame)
+
+            print(f"Preprocessing time: {time.time() - delta_time:.3f}")
+            delta_time = time.time()
 
             # experiment on the environment to collect experiences
             for t in range(MAX_STEP_PER_EPISODE):
@@ -126,22 +132,29 @@ class DQNOnGym():
                 next_preprocessed_frame = prepost_frame(next_frame, IMAGE_SIZE)
                 next_stacked_preprocessed_frames = self.frame_stacker.add(next_preprocessed_frame)
 
+                # Store the experience in the replay buffer
+
                 self.replay_buffer.add(stacked_preprocessed_frames,
                                        np.array(action, dtype=np.int32),
                                        np.array(scale_reward(reward), dtype=np.float32),
                                        next_stacked_preprocessed_frames,
                                        np.array(done, dtype=np.float32))
-                
                 stacked_preprocessed_frames = next_stacked_preprocessed_frames.copy()
 
                 if done or truncated:
                     break
+            
+            print(f"Experience time: {time.time() - delta_time:.3f}")
+            delta_time = time.time()
 
             # Train the model
             mean_loss, mean_q_value = self.trainer.train()
             epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
             if episode % TARGET_UPDATE == 0:
                 self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
+
+            print(f"Training time: {time.time() - delta_time:.3f}")
+            delta_time = time.time()
 
             # Log the results
             env_step += t
@@ -157,8 +170,12 @@ class DQNOnGym():
             self.writer.add_scalar("training/mean_q_value", mean_q_value, episode)
             self.writer.add_scalar("training/buffer_size", len(self.replay_buffer), episode)
 
+            print(f"Logging time: {time.time() - delta_time:.3f}")
+
             if episode % EVAL_RATE == 0:
                 self.eval_loop(episode)
+
+            
                  
 
         self.writer.close()
