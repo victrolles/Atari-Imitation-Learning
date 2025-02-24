@@ -2,22 +2,6 @@ import torch
 import numpy as np
 import random
 import time
-from torch.utils.data import Dataset, DataLoader
-
-class RLDataset(Dataset):
-    def __init__(self, buffer):
-        self.buffer = buffer
-
-    def __len__(self):
-        return len(self.buffer)
-
-    def __getitem__(self, idx):
-        """Retourne une seule expérience sous forme de tensor PyTorch"""
-        return (torch.tensor(self.buffer.states[idx], dtype=torch.float32),
-                torch.tensor(self.buffer.actions[idx], dtype=torch.int64),
-                torch.tensor(self.buffer.rewards[idx], dtype=torch.float32),
-                torch.tensor(self.buffer.next_states[idx], dtype=torch.float32),
-                torch.tensor(self.buffer.dones[idx], dtype=torch.bool))
 
 class ReplayBuffer:
     def __init__(self, capacity, state_dim):
@@ -25,32 +9,47 @@ class ReplayBuffer:
         self.position = 0
         self.full = False
 
-        # Allocation des données en NumPy
+        # Préallocation des arrays pour éviter les copies répétées
         self.states = np.zeros((capacity, *state_dim), dtype=np.float32)
-        self.actions = np.zeros((capacity, 1), dtype=np.int64)
+        self.actions = np.zeros((capacity, 1), dtype=np.int64)  # Actions discrètes
         self.rewards = np.zeros((capacity, 1), dtype=np.float32)
         self.next_states = np.zeros((capacity, *state_dim), dtype=np.float32)
         self.dones = np.zeros((capacity, 1), dtype=np.bool_)
 
     def add(self, state, action, reward, next_state, done):
-        """Ajoute une expérience au buffer."""
+        """Ajoute une transition dans le buffer, écrasant les plus anciennes."""
         self.states[self.position] = state
         self.actions[self.position] = action
         self.rewards[self.position] = reward
         self.next_states[self.position] = next_state
         self.dones[self.position] = done
 
-        # Gestion FIFO
+        # Mise à jour de la position (FIFO)
         self.position = (self.position + 1) % self.capacity
         if self.position == 0:
             self.full = True
 
+    def sample(self, batch_size):
+        """Retourne un batch aléatoire sous forme de tensors PyTorch."""
+        max_index = self.capacity if self.full else self.position
+        indices = np.random.choice(max_index, batch_size, replace=False)
+
+        batch = (
+            torch.tensor(self.states[indices], dtype=torch.float32),
+            torch.tensor(self.actions[indices], dtype=torch.int64),
+            torch.tensor(self.rewards[indices], dtype=torch.float32),
+            torch.tensor(self.next_states[indices], dtype=torch.float32),
+            torch.tensor(self.dones[indices], dtype=torch.bool),
+        )
+        return batch
+
     def __len__(self):
+        """Retourne la taille actuelle du buffer."""
         return self.capacity if self.full else self.position
-    
+
 if __name__ == "__main__":
 
-    # ⚡ Initialisation du buffer
+    # Exemple d'utilisation
     # state_dim = (4,)
     state_dim = (4, 84, 84)
     buffer = ReplayBuffer(capacity=100_000, state_dim=state_dim)
@@ -66,32 +65,17 @@ if __name__ == "__main__":
         done = np.random.choice([False, True])
         buffer.add(state, action, reward, next_state, done)
 
-    # ⚡ Création du DataLoader avec préchargement et multithreading
-    num_workers = 1
-    delta_time = time.time()
-    dataset = RLDataset(buffer)
-    # # dataloader = DataLoader(dataset,
-    #                         batch_size=128,
-    #                         shuffle=True,
-    #                         num_workers=num_workers,
-    #                         pin_memory=False,
-    #                         prefetch_factor=1,
-    #                         persistent_workers=False)
-    dataloader = DataLoader(dataset,
-                            batch_size=32,
-                            shuffle=False,
-                            num_workers=0,
-                            pin_memory=False,
-                            persistent_workers=False)
+    print(f"Buffer size: {len(buffer)}")
 
-    print("num_workers:", num_workers)
-    print(f"DataLoader creation time: {time.time() - delta_time:.3f}")
     delta_time = time.time()
+    list_time = []
     list_time2 = []
 
-    # Test d'extraction de batch
-
-    for idx, batch in enumerate(dataloader):
+    # Extraction d'un batch
+    for i in range(624):
+        delta2 = time.time()
+        batch = buffer.sample(32)
+        list_time.append(time.time() - delta2)
         delta_time3 = time.time()
         batch_states, batch_actions, batch_rewards, batch_next_states, batch_dones = batch
         batch_states = batch_states.to(device)
@@ -100,7 +84,7 @@ if __name__ == "__main__":
         batch_next_states = batch_next_states.to(device)
         batch_dones = batch_dones.to(device)
         list_time2.append(time.time() - delta_time3)
-
     print(f"Batch extraction time: {time.time() - delta_time:.3f}")
-    print("mean time:", np.mean(list_time2))
-    print("idx:", idx)
+    print(f"Mean time: {np.mean(list_time):.6f}")
+    print(f"Mean time2: {np.mean(list_time2):.6f}")
+    print("idx:", i)

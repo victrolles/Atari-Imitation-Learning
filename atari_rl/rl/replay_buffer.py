@@ -56,28 +56,28 @@ class ReplayBuffer:
             A dictionary containing the sampled batch of experiences. (states, actions, rewards, next_states, dones)
         """
         indices = np.random.choice(self.size, batch_size, replace=False)
-        delta_time = time.time()
+        # delta_time = time.time()
         states =self.states[indices]
         actions = self.actions[indices]
         rewards = self.rewards[indices]
         next_states = self.next_states[indices]
         dones = self.dones[indices]
-        print(f"Sampling time: {time.time() - delta_time:.3f}")
+        # print(f"Sampling time: {time.time() - delta_time:.3f}")
         delta_time = time.time()
         torch_states = torch.tensor(states, dtype=torch.float32)
         torch_actions = torch.tensor(actions, dtype=torch.long)
         torch_rewards = torch.tensor(rewards, dtype=torch.float32)
         torch_next_states = torch.tensor(next_states, dtype=torch.float32)
         torch_dones = torch.tensor(dones, dtype=torch.float32)
-        print(f"Converting time: {time.time() - delta_time:.3f}")
-        delta_time = time.time()
+        # print(f"Converting time: {time.time() - delta_time:.3f}")
+        # delta_time = time.time()
         torch_states = torch_states.to(self.device)
         torch_actions = torch_actions.to(self.device)
         torch_rewards = torch_rewards.to(self.device)
         torch_next_states = torch_next_states.to(self.device)
         torch_dones = torch_dones.to(self.device)
-        print(f"Moving time: {time.time() - delta_time:.3f}")
-        delta_time = time.time()
+        # print(f"Moving time: {time.time() - delta_time:.3f}")
+        # delta_time = time.time()
         dict = {
             "states": torch_states,
             "actions": torch_actions,
@@ -85,7 +85,7 @@ class ReplayBuffer:
             "next_states": torch_next_states,
             "dones": torch_dones
         }
-        print(f"Dict time: {time.time() - delta_time:.3f}")
+        # print(f"Dict time: {time.time() - delta_time:.3f}")
         return dict
     #     return {
     #     "states": torch.tensor(self.states[indices], dtype=torch.float32).to(self.device),

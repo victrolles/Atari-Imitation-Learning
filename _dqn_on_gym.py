@@ -107,15 +107,15 @@ class DQNOnGym():
             print(f"Episode {episode}, epsilon: {epsilon:.3f}, total_reward: {int(total_reward)}")
             total_reward = 0
 
-            delta_time = time.time()
+            # delta_time = time.time()
 
             # Process the first frame
             frame, _ = env.reset()
             preprocessed_frame = prepost_frame(frame, IMAGE_SIZE)
             stacked_preprocessed_frames = self.frame_stacker.reset(preprocessed_frame)
 
-            print(f"Preprocessing time: {time.time() - delta_time:.3f}")
-            delta_time = time.time()
+            # print(f"Preprocessing time: {time.time() - delta_time:.3f}")
+            # delta_time = time.time()
 
             # experiment on the environment to collect experiences
             for t in range(MAX_STEP_PER_EPISODE):
@@ -144,17 +144,17 @@ class DQNOnGym():
                 if done or truncated:
                     break
             
-            print(f"Experience time: {time.time() - delta_time:.3f}")
-            delta_time = time.time()
+            # print(f"Experience time: {time.time() - delta_time:.3f}")
+            # delta_time = time.time()
 
             # Train the model
-            mean_loss, mean_q_value = self.trainer.train()
-            epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
-            if episode % TARGET_UPDATE == 0:
-                self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
+            # mean_loss, mean_q_value = self.trainer.train()
+            # epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
+            # if episode % TARGET_UPDATE == 0:
+            #     self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
 
-            print(f"Training time: {time.time() - delta_time:.3f}")
-            delta_time = time.time()
+            # print(f"Training time: {time.time() - delta_time:.3f}")
+            # delta_time = time.time()
 
             # Log the results
             env_step += t
@@ -166,11 +166,11 @@ class DQNOnGym():
             self.writer.add_scalar("charts/training_iter", training_iter, episode)
 
             self.writer.add_scalar("training/epsilon", epsilon, episode)
-            self.writer.add_scalar("training/mean_loss", mean_loss, episode)
-            self.writer.add_scalar("training/mean_q_value", mean_q_value, episode)
+            # self.writer.add_scalar("training/mean_loss", mean_loss, episode)
+            # self.writer.add_scalar("training/mean_q_value", mean_q_value, episode)
             self.writer.add_scalar("training/buffer_size", len(self.replay_buffer), episode)
 
-            print(f"Logging time: {time.time() - delta_time:.3f}")
+            # print(f"Logging time: {time.time() - delta_time:.3f}")
 
             if episode % EVAL_RATE == 0:
                 self.eval_loop(episode)
