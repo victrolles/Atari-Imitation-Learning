@@ -15,11 +15,13 @@ Experience = namedtuple('Experience', ('state', 'action', 'reward', 'next_state'
 
 class DqnWorkerEnv():
 
-    def __init__(self, idx, queue, policy_net):
+    def __init__(self, idx, training_id, queue, policy_net):
         self.config = config()
         self.idx = idx
+        self.training_id = training_id
         self.queue = queue
         self.policy_net = policy_net
+
         self.frame_stacker = FrameStacker(stack_size=self.config.frame_stack_size,
                                           frame_skip_size=self.config.frame_skip_size)
 
@@ -42,7 +44,7 @@ class DqnWorkerEnv():
         idx = 0
 
         while True:
-            print(f"Env {self.idx}, episode {idx}, epsilon {epsilon}, queue size {self.queue.qsize()}")
+            
             idx += 1
             # Process the first frame
             frame, _ = env.reset()
@@ -80,3 +82,5 @@ class DqnWorkerEnv():
 
                 if done or truncated:
                     break
+
+            self.writer.add_scalars(f"charts/episode_length", {self.idx: t}, idx)

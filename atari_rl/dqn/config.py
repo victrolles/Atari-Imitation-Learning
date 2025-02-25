@@ -1,8 +1,8 @@
 class config():
     queue_size = 200000
 
-    num_worker_env = 3
-    num_worker_trainer = 2
+    num_worker_env = 2
+    num_worker_trainer = 6
 
     game_name = "MsPacman-v5"
     rl_algorithm = "DQN"

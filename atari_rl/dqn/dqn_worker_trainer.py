@@ -2,31 +2,26 @@ import random
 import time
 from collections import namedtuple
 
-import gymnasium as gym
-from gymnasium.wrappers import RecordVideo
-import ale_py
 import torch
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
 from atari_rl.dqn.dqn_trainer import DQNTrainer
-from atari_rl.rl.agent import Agent
-from atari_rl.rl.utils import prepost_frame, scale_reward
-from atari_rl.rl.frame_stacker import FrameStacker
 from atari_rl.rl.replay_buffer import ReplayBuffer
 from atari_rl.dqn.config import config
-from atari_rl.dqn.utils import select_action
 from atari_rl.dqn.dqn_model import DQNModel
 
 Experience = namedtuple('Experience', ('state', 'action', 'reward', 'next_state', 'done'))
 
 class DqnWorkerTrainer():
 
-    def __init__(self, idx, queue, policy_net):
+    def __init__(self, idx, training_id, queue, policy_net):
         self.config = config()
         self.idx = idx
+        self.training_id = training_id
         self.queue = queue
         self.policy_net = policy_net
+        self.writer = writer
         self.target_net = DQNModel(self.config.obs_shape, self.config.num_actions)
 
         if torch.cuda.is_available():
@@ -53,6 +48,10 @@ class DqnWorkerTrainer():
             device=self.device
         )
 
+        self.writer = SummaryWriter(f"./results/tensorboard/{self.config.rl_algorithm}_{self.config.game_name}_{training_id}_trainer")
+        hyperparams = "\n".join([f"**{key}**: {value}" for key, value in vars(config).items() if not key.startswith("__")])
+        self.writer.add_text("Hyperparameters", hyperparams)
+
         self.loop()
 
     def loop(self):
@@ -63,11 +62,13 @@ class DqnWorkerTrainer():
         
             if len(self.replay_buffer) > self.config.batch_size:
                 print(f"Trainer {self.idx}, epoch {idx}, replay buffer size {len(self.replay_buffer)}")
+                if self.idx == 0:
+                    self.writer.add_scalar("charts/replay_buffer", len(self.replay_buffer), idx)
                 idx += 1
                 self.trainer.train()
 
     def empty_queue(self):
-        while not self.queue.empty():
+        while self.queue.qsize() > 0:
             experience: Experience = self.queue.get()
             self.replay_buffer.add(experience.state,
                                    experience.action,

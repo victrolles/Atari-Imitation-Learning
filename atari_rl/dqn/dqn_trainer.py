@@ -42,6 +42,9 @@ class DQNTrainer():
         self.policy_net.to(self.device)
         self.target_net.to(self.device)
 
+        list_loss = []
+        
+
         for _ in range(self.iter_per_episode):
 
             # Sample a batch of experiences
