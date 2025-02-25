@@ -21,7 +21,7 @@ class DqnWorkerTrainer():
         self.training_id = training_id
         self.queue = queue
         self.policy_net = policy_net
-        self.writer = writer
+        
         self.target_net = DQNModel(self.config.obs_shape, self.config.num_actions)
 
         if torch.cuda.is_available():
@@ -62,10 +62,13 @@ class DqnWorkerTrainer():
         
             if len(self.replay_buffer) > self.config.batch_size:
                 print(f"Trainer {self.idx}, epoch {idx}, replay buffer size {len(self.replay_buffer)}")
-                if self.idx == 0:
-                    self.writer.add_scalar("charts/replay_buffer", len(self.replay_buffer), idx)
                 idx += 1
-                self.trainer.train()
+                mean_loss, mean_q_value = self.trainer.train()
+                if self.idx == 0:
+                    self.writer.add_scalar("trainer/mean_loss", mean_loss, idx)
+                    self.writer.add_scalar("trainer/mean_q_value", mean_q_value, idx)
+                    self.writer.add_scalar("trainer/replay_buffer", len(self.replay_buffer), idx)
+                    self.writer.add_scalar("trainer/buffer_size", len(self.replay_buffer), idx)
 
     def empty_queue(self):
         while self.queue.qsize() > 0:

@@ -1,8 +1,6 @@
 import multiprocessing as mp
 import random
 
-from torch.utils.tensorboard import SummaryWriter
-
 from atari_rl.dqn.dqn_worker_env import DqnWorkerEnv as Env
 from atari_rl.dqn.dqn_worker_trainer import DqnWorkerTrainer as Trainer
 from atari_rl.dqn.dqn_model import DQNModel

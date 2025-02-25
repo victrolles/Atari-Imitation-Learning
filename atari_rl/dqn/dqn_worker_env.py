@@ -4,6 +4,7 @@ import gymnasium as gym
 import ale_py
 import torch
 import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 
 from atari_rl.rl.utils import prepost_frame, scale_reward
 from atari_rl.rl.frame_stacker import FrameStacker
@@ -32,6 +33,10 @@ class DqnWorkerEnv():
             print("Training with CPU")
             self.device = torch.device("cpu")
 
+        self.writer = SummaryWriter(f"./results/tensorboard/{self.config.rl_algorithm}_{self.config.game_name}_{training_id}_trainer")
+        hyperparams = "\n".join([f"**{key}**: {value}" for key, value in vars(config).items() if not key.startswith("__")])
+        self.writer.add_text("Hyperparameters", hyperparams)
+
         self.loop()
 
     def loop(self):
@@ -46,6 +51,7 @@ class DqnWorkerEnv():
         while True:
             
             idx += 1
+            rewards = 0
             # Process the first frame
             frame, _ = env.reset()
             preprocessed_frame = prepost_frame(frame, self.config.image_size)
@@ -63,6 +69,7 @@ class DqnWorkerEnv():
 
                 # Perform the action
                 next_frame, reward, done, truncated, _ = env.step(action)
+                rewards += reward
 
                 # Preprocess the next frame
                 next_preprocessed_frame = prepost_frame(next_frame, self.config.image_size)
@@ -83,4 +90,8 @@ class DqnWorkerEnv():
                 if done or truncated:
                     break
 
-            self.writer.add_scalars(f"charts/episode_length", {self.idx: t}, idx)
+            if self.idx == 0:
+                self.writer.add_scalars(f"charts/episode_length", {self.idx: t}, idx)
+                self.writer.add_scalars(f"charts/epsilon", {self.idx: epsilon}, idx)
+                self.writer.add_scalars(f"charts/rewards", {self.idx: rewards}, idx)
+                self.writer.add_scalars(f"charts/buffer_size", {self.idx: self.queue.qsize()}, idx)

@@ -43,7 +43,7 @@ class DQNTrainer():
         self.target_net.to(self.device)
 
         list_loss = []
-        
+        list_q_values = []
 
         for _ in range(self.iter_per_episode):
 
@@ -65,3 +65,9 @@ class DQNTrainer():
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+
+            # Store statistics
+            list_q_values.append(q_values.mean().item())
+            list_loss.append(loss.item())
+
+        return np.mean(list_loss), np.mean(list_q_values)
