@@ -41,7 +41,7 @@ class DQNTrainer():
 
         for _ in range(self.iter_per_episode):
 
-            delta_time = time.time()
+            # delta_time = time.time()
 
             # Sample a batch of experiences
             data = self.replay_buffer.sample(self.batch_size)

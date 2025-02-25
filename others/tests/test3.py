@@ -57,7 +57,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Ajout d'expériences fictives
-    for _ in range(20_000):
+    for _ in range(10_000):
         state = np.random.rand(*state_dim)
         action = np.random.randint(0, 2)
         reward = np.random.uniform(-1, 1)
@@ -72,9 +72,9 @@ if __name__ == "__main__":
     list_time2 = []
 
     # Extraction d'un batch
-    for i in range(624):
+    for i in range(10):
         delta2 = time.time()
-        batch = buffer.sample(32)
+        batch = buffer.sample(1024)
         list_time.append(time.time() - delta2)
         delta_time3 = time.time()
         batch_states, batch_actions, batch_rewards, batch_next_states, batch_dones = batch

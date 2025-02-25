@@ -58,7 +58,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Ajout d'expériences fictives
-    for _ in range(20_000):
+    for _ in range(10_000):
         state = np.random.rand(*state_dim)
         action = np.random.randint(0, 2)
         reward = np.random.uniform(-1, 1)
@@ -67,18 +67,18 @@ if __name__ == "__main__":
         buffer.add(state, action, reward, next_state, done)
 
     # ⚡ Création du DataLoader avec préchargement et multithreading
-    num_workers = 1
+    num_workers = 12
     delta_time = time.time()
     dataset = RLDataset(buffer)
-    # # dataloader = DataLoader(dataset,
-    #                         batch_size=128,
+    # dataloader = DataLoader(dataset,
+    #                         batch_size=256,
     #                         shuffle=True,
     #                         num_workers=num_workers,
-    #                         pin_memory=False,
-    #                         prefetch_factor=1,
-    #                         persistent_workers=False)
+    #                         pin_memory=True,
+    #                         prefetch_factor=2,
+    #                         persistent_workers=True)
     dataloader = DataLoader(dataset,
-                            batch_size=32,
+                            batch_size=1024,
                             shuffle=False,
                             num_workers=0,
                             pin_memory=False,

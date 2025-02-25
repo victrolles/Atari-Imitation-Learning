@@ -27,7 +27,7 @@ FRAME_SKIP_SIZE = 4
 # DQN parameters
 GAMMA = 0.99
 LEARNING_RATE = 1e-4
-BUFFER_SIZE = 50000
+BUFFER_SIZE = 17000
 BATCH_SIZE = 256
 EPSILON_START = 1.0
 EPSILON_END = 0.1
@@ -66,6 +66,7 @@ class DQNOnGym():
         else:
             print("Training with CPU")
             self.device = torch.device("cpu")
+        # self.device = torch.device("cpu")
 
         self.training_id = random.randint(0, 1000)
         print(f"Training ID: {self.training_id}")
@@ -103,8 +104,12 @@ class DQNOnGym():
         training_iter = 0
         total_reward = 0
         epsilon = EPSILON_START
+        list_time = []
+        delta_time = time.time()
         for episode in range(NUM_EPISODES):
-            print(f"Episode {episode}, epsilon: {epsilon:.3f}, total_reward: {int(total_reward)}")
+            list_time.append(time.time() - delta_time)
+            print(f"Episode {episode}, epsilon: {epsilon:.3f}, total_reward: {int(total_reward)}, mean time: {np.mean(list_time):.3f}")
+            delta_time = time.time()
             total_reward = 0
 
             # delta_time = time.time()
@@ -148,10 +153,10 @@ class DQNOnGym():
             # delta_time = time.time()
 
             # Train the model
-            # mean_loss, mean_q_value = self.trainer.train()
-            # epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
-            # if episode % TARGET_UPDATE == 0:
-            #     self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
+            mean_loss, mean_q_value = self.trainer.train()
+            epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
+            if episode % TARGET_UPDATE == 0:
+                self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
 
             # print(f"Training time: {time.time() - delta_time:.3f}")
             # delta_time = time.time()
@@ -166,8 +171,8 @@ class DQNOnGym():
             self.writer.add_scalar("charts/training_iter", training_iter, episode)
 
             self.writer.add_scalar("training/epsilon", epsilon, episode)
-            # self.writer.add_scalar("training/mean_loss", mean_loss, episode)
-            # self.writer.add_scalar("training/mean_q_value", mean_q_value, episode)
+            self.writer.add_scalar("training/mean_loss", mean_loss, episode)
+            self.writer.add_scalar("training/mean_q_value", mean_q_value, episode)
             self.writer.add_scalar("training/buffer_size", len(self.replay_buffer), episode)
 
             # print(f"Logging time: {time.time() - delta_time:.3f}")
