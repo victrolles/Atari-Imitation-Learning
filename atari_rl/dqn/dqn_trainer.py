@@ -36,18 +36,16 @@ class DQNTrainer():
         self.criterion = nn.MSELoss()
 
     def train(self):
-        list_loss = []
-        list_q_values = []
+        self.policy_net.train()
+        self.target_net.eval()
+
+        self.policy_net.to(self.device)
+        self.target_net.to(self.device)
 
         for _ in range(self.iter_per_episode):
 
-            # delta_time = time.time()
-
             # Sample a batch of experiences
             data = self.replay_buffer.sample(self.batch_size)
-
-            # print(f"Sampling time: {time.time() - delta_time:.3f}")
-            # delta_time = time.time()
             
             # Compute Q values
             q_values = self.policy_net(data['states']).gather(1, data['actions']).squeeze(1)
@@ -60,19 +58,7 @@ class DQNTrainer():
             # Compute the loss
             loss = self.criterion(q_values, expected_q_values)
 
-            # print(f"Computing time: {time.time() - delta_time:.3f}")
-            # delta_time = time.time()
-
             # Optimize the model
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-
-            # Store statistics
-            list_q_values.append(q_values.mean().item())
-            list_loss.append(loss.item())
-
-            # print(f"Optimization time: {time.time() - delta_time:.3f}")
-            # delta_time = time.time()
-
-        return np.mean(list_loss), np.mean(list_q_values)
