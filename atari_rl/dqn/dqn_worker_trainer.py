@@ -10,6 +10,7 @@ from atari_rl.dqn.dqn_trainer import DQNTrainer
 from atari_rl.rl.replay_buffer import ReplayBuffer
 from atari_rl.dqn.config import config
 from atari_rl.dqn.dqn_model import DQNModel
+from atari_rl.dqn.utils import save_model
 
 Experience = namedtuple('Experience', ('state', 'action', 'reward', 'next_state', 'done'))
 
@@ -31,6 +32,8 @@ class DqnWorkerTrainer():
             print("Training with CPU")
             self.device = torch.device("cpu")
 
+        self.target_net.to(self.device)
+
         self.replay_buffer = ReplayBuffer(
             self.config.buffer_size,
             self.config.obs_shape,
@@ -48,9 +51,10 @@ class DqnWorkerTrainer():
             device=self.device
         )
 
-        self.writer = SummaryWriter(f"./results/tensorboard/{self.config.rl_algorithm}_{self.config.game_name}_{training_id}_trainer")
-        hyperparams = "\n".join([f"**{key}**: {value}" for key, value in vars(config).items() if not key.startswith("__")])
-        self.writer.add_text("Hyperparameters", hyperparams)
+        if self.idx == 0:
+            self.writer = SummaryWriter(f"./results/tensorboard/{self.config.rl_algorithm}_{self.config.game_name}_{training_id}_trainer")
+            hyperparams = "\n".join([f"**{key}**: {value}" for key, value in vars(config).items() if not key.startswith("__")])
+            self.writer.add_text("Hyperparameters", hyperparams)
 
         self.loop()
 
@@ -61,14 +65,22 @@ class DqnWorkerTrainer():
             self.empty_queue()
         
             if len(self.replay_buffer) > self.config.batch_size:
-                print(f"Trainer {self.idx}, epoch {idx}, replay buffer size {len(self.replay_buffer)}")
                 idx += 1
                 mean_loss, mean_q_value = self.trainer.train()
                 if self.idx == 0:
+                    print(f"Trainer {self.idx}, epoch {idx}")
                     self.writer.add_scalar("trainer/mean_loss", mean_loss, idx)
                     self.writer.add_scalar("trainer/mean_q_value", mean_q_value, idx)
                     self.writer.add_scalar("trainer/replay_buffer", len(self.replay_buffer), idx)
-                    self.writer.add_scalar("trainer/buffer_size", len(self.replay_buffer), idx)
+
+                if idx % self.config.target_update == 0:
+                    self.target_net.load_state_dict(self.policy_net.state_dict())
+
+                if idx % self.config.eval_rate == 0:
+                    model_path = f"./results/models/{self.config.rl_algorithm}_{self.config.game_name}_{self.training_id}/"
+                    model_name = f"episode_{idx}"
+                    save_model(self.policy_net, model_path, model_name)
+                    
 
     def empty_queue(self):
         while self.queue.qsize() > 0:

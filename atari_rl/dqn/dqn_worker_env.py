@@ -33,9 +33,10 @@ class DqnWorkerEnv():
             print("Training with CPU")
             self.device = torch.device("cpu")
 
-        self.writer = SummaryWriter(f"./results/tensorboard/{self.config.rl_algorithm}_{self.config.game_name}_{training_id}_trainer")
-        hyperparams = "\n".join([f"**{key}**: {value}" for key, value in vars(config).items() if not key.startswith("__")])
-        self.writer.add_text("Hyperparameters", hyperparams)
+        if self.idx == 0:
+            self.writer = SummaryWriter(f"./results/tensorboard/{self.config.rl_algorithm}_{self.config.game_name}_{training_id}_env")
+            hyperparams = "\n".join([f"**{key}**: {value}" for key, value in vars(config).items() if not key.startswith("__")])
+            self.writer.add_text("Hyperparameters", hyperparams)
 
         self.loop()
 
@@ -90,8 +91,11 @@ class DqnWorkerEnv():
                 if done or truncated:
                     break
 
+            epsilon = max(self.config.epsilon_end, epsilon * self.config.epsilon_decay)
+
             if self.idx == 0:
-                self.writer.add_scalars(f"charts/episode_length", {self.idx: t}, idx)
-                self.writer.add_scalars(f"charts/epsilon", {self.idx: epsilon}, idx)
-                self.writer.add_scalars(f"charts/rewards", {self.idx: rewards}, idx)
-                self.writer.add_scalars(f"charts/buffer_size", {self.idx: self.queue.qsize()}, idx)
+                print(f"env 0 : episode : {idx}")
+                self.writer.add_scalar(f"charts/episode_length", t, idx)
+                self.writer.add_scalar(f"charts/epsilon", epsilon, idx)
+                self.writer.add_scalar(f"charts/rewards", rewards, idx)
+                self.writer.add_scalar(f"charts/buffer_size", self.queue.qsize(), idx)

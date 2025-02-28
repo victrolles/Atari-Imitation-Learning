@@ -23,6 +23,7 @@ def select_action(
     :param deterministic: whether to select the action deterministically or not
     :return: action index
     """
+    policy_net.to(device)
 
     if training and random.random() < epsilon:
         return random.randrange(num_actions)
