@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 ### Start the training
 ```bash
-python main.py
+python _dqn_on_gym.py
 ```
 
 ### Open Tensorboard

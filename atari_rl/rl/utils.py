@@ -20,15 +20,15 @@ def prepost_frame(frame, resize_size = 128, game_name = "MsPacman-v5"):
         np.ndarray: The preposted frame. Shape: (resize_size, resize_size)
     """
     # Crop the image
-    if game_name == "MsPacman-v5":
-        cropped_frame = frame[1:171, 0:159]
-    elif game_name == "Enduro-v5":
-        cropped_frame = frame[0:154, 8:158]
-    else:
-        raise ValueError("Invalid game name")
+    # if game_name == "MsPacman-v5":
+    #     cropped_frame = frame[1:171, 0:159]
+    # elif game_name == "Enduro-v5":
+    #     cropped_frame = frame[0:154, 8:158]
+    # else:
+    #     raise ValueError("Invalid game name")
 
     # Resize the image to 128x128
-    resized_frame = cv2.resize(cropped_frame, (resize_size, resize_size))
+    resized_frame = cv2.resize(frame, (resize_size, resize_size))
 
     # Convert to grayscale
     gray_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
