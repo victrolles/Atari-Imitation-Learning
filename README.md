@@ -28,3 +28,5 @@ python _dqn_on_gym.py
 ```bash
 tensorboard --logdir=./tensorboard
 ```
+
+https://github.com/Div99/IQ-Learn

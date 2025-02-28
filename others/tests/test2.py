@@ -1,4 +1,5 @@
 import os
+import h5py
+import numpy as np
 
-if not os.path.exists("./tests/testss/"):
-    os.makedirs("./tests/testss/")
+zeros_matrix = np.zeros((3, 3), dtype=np.float32)

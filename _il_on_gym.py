@@ -15,9 +15,9 @@ from atari_rl.il.expert_dataset import ExpertDataset
 from atari_rl.il.expert_dataset_wrapper import ExpertDatasetWrapper
 
 # Game parameters
-GAME_NAME = "MsPacman-v5"
+GAME_NAME = "Freeway-v5"
 RL_ALGORITHM = "IL"
-NUM_ACTIONS = 5
+NUM_ACTIONS = 3
 
 # Agent parameters
 IMAGE_SIZE = 84
@@ -26,14 +26,14 @@ FRAME_SKIP_SIZE = 4
 
 # Imitation Learning parameters
 LEARNING_RATE = 1e-4
-EXPERT_NAME = "expert_dataset_21668"
+EXPERT_NAME = "expert_dataset_204800"
 VAL_LOADED_SIZE = 1000
-LOADED_SIZE = 6400
-BATCH_SIZE = 32
-EPOCHS = 200
+LOADED_SIZE = 40000
+BATCH_SIZE = 256
+EPOCHS = 100
 
 # Evaluation parameters
-MODEL_NAME = "DQN_MsPacman-v5_290_10700.pt"
+MODEL_NAME = "DQN_Freeway-v5_290_10700.pt"
 SAVE_MODEL = True
 LOAD_MODEL = False
 
@@ -78,21 +78,18 @@ class ILOnGym():
         self.optimizer = torch.optim.Adam(self.agent.policy_net.parameters(), LEARNING_RATE)
 
         self.writer = SummaryWriter(f"./results/tensorboard/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}")
-        self.writer.add_graph("Hyperparameters", {"Learning rate": LEARNING_RATE,
-                                                  "Batch size": BATCH_SIZE,
-                                                  "Loaded size": LOADED_SIZE,
-                                                  "Validation loaded size": VAL_LOADED_SIZE,
-                                                  "Epochs": EPOCHS})
+        self.writer.add_text("Hyperparameters", f"Learning rate: {LEARNING_RATE}, Batch size: {BATCH_SIZE}, Epochs: {EPOCHS}")
 
     def loop(self):
 
         for epoch in range(EPOCHS):
+            self.epoch = epoch
             print(f"Epoch {epoch}")
 
             self.train()
             self.validation()
 
-            if epoch % 10 == 0:
+            if epoch % 5 == 0:
                 self.eval(epoch)
 
     def train(self):
@@ -126,7 +123,7 @@ class ILOnGym():
             list_loss.append(loss.item())
 
         mean_loss = np.mean(list_loss)
-        self.writer.add_scalar("Loss", mean_loss)
+        self.writer.add_scalar("Training/Training loss", mean_loss, self.epoch)
 
     def validation(self):
         self.agent.policy_net.eval()
@@ -156,7 +153,7 @@ class ILOnGym():
             total_correct += (outputs == labels).sum().item()
 
         accuracy = total_correct / total_samples
-        self.writer.add_scalar("Validation accuracy", accuracy)
+        self.writer.add_scalar("Charts/Validation accuracy", accuracy, self.epoch)
 
     def eval(self, train_episode: int):
 
@@ -212,8 +209,8 @@ class ILOnGym():
             list_reward.append(total_reward)
             list_length.append(t)
 
-        self.writer.add_scalar("Eval reward", np.mean(list_reward))
-        self.writer.add_scalar("Eval length", np.mean(list_length))
+        self.writer.add_scalar("Charts/Eval reward", np.mean(list_reward), self.epoch)
+        self.writer.add_scalar("Charts/Eval length", np.mean(list_length), self.epoch)
 
         env_eval.close()
 
