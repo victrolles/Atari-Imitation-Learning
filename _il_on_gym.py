@@ -26,9 +26,9 @@ FRAME_SKIP_SIZE = 4
 
 # Imitation Learning parameters
 LEARNING_RATE = 1e-4
-EXPERT_NAME = "expert_dataset_204800"
+EXPERT_NAME = "expert_dataset_163840"
 VAL_LOADED_SIZE = 1000
-LOADED_SIZE = 40000
+LOADED_SIZE = 35000
 BATCH_SIZE = 256
 EPOCHS = 100
 

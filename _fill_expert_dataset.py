@@ -1,16 +1,20 @@
+import random
+
 import gymnasium as gym
 import ale_py
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 from atari_rl.il.expert_dataset import StateAction, ExpertDataset
 from atari_rl.rl.agent import Agent
 from atari_rl.rl.utils import prepost_frame
 from atari_rl.rl.frame_stacker import FrameStacker
 
-NUM_EPISODES = 100
+NUM_EPISODES = 70
 
 # Game parameters
 GAME_NAME = "Freeway-v5"
+RL_ALGORITHM = "FILL"
 NUM_ACTIONS = 3
 MAX_STEP_PER_EPISODE = 10000
 
@@ -48,13 +52,20 @@ class Main():
             print("Training with CPU")
             self.device = torch.device("cpu")
 
+        self.training_id = random.randint(0, 1000)
+        print(f"Filling number : {self.training_id}")
+        h5_name = f"{H5_NAME}_{self.training_id}"
+
         self.agent = Agent(obs_shape, NUM_ACTIONS, self.device)
         self.agent.load_model(MODEL_PATH, MODEL_NAME)
         self.frame_stacker = FrameStacker(stack_size=FRAME_STACK_SIZE, frame_skip_size=FRAME_SKIP_SIZE)
         self.expert_dataset = ExpertDataset(obs_shape,
                                             NUM_ACTIONS,
                                             expert_folder=H5_PATH,
-                                            expert_name=H5_NAME)
+                                            expert_name=h5_name)
+        
+        self.writer = SummaryWriter(f"./results/tensorboard/{RL_ALGORITHM}_{GAME_NAME}_{self.training_id}")
+        self.writer.add_text("Hyperparameters", f"Game: {GAME_NAME}, Num actions: {NUM_ACTIONS}, Max step per episode: {MAX_STEP_PER_EPISODE}")
 
     def fill_dataset(self):
         
@@ -62,19 +73,21 @@ class Main():
             print(f"Episode {i}, size: {len(self.expert_dataset)}")
             list_state_action = []
             done = False
+            total_reward = 0
 
             frame, _ = self.env.reset()
             preprocessed_frame = prepost_frame(frame, IMAGE_SIZE)
             stacked_preprocessed_frames = self.frame_stacker.reset(preprocessed_frame)
 
-            for _ in range(MAX_STEP_PER_EPISODE):
+            for t in range(MAX_STEP_PER_EPISODE):
                 action = self.agent.select_action(stacked_preprocessed_frames,
                                                 epsilon=EPSILON,
                                                 deterministic=DETERMINISTIC,
                                                 training=USE_EPSILON,
                                                 temperature=TEMPERATURE)
 
-                next_frames, _, done, truncated, _ = self.env.step(action)
+                next_frames, reward, done, truncated, _ = self.env.step(action)
+                total_reward += reward
                 next_preprocessed_frame = prepost_frame(next_frames, IMAGE_SIZE)
                 next_stacked_preprocessed_frames = self.frame_stacker.add(next_preprocessed_frame)
 
@@ -84,6 +97,9 @@ class Main():
 
                 if done or truncated:
                     break
+
+            self.writer.add_scalar("charts/rewards", total_reward, i)
+            self.writer.add_scalar("charts/size", len(self.expert_dataset), i)
 
             self.expert_dataset.add(list_state_action)
 
