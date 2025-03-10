@@ -7,7 +7,8 @@ import numpy as np
 
 from atari_rl.rl.replay_buffer import ReplayBuffer
 from atari_rl.dqn.dqn_model import DQNModel
-from atari_rl.il.expert_dataset import ExpertDataset
+from atari_rl.iql.expert_dataset import ExpertDataset
+from atari_rl.iql.utils import get_concat_samples
 
 class IQLTrainer():
 
@@ -39,32 +40,37 @@ class IQLTrainer():
         self.criterion = nn.MSELoss()
 
     def train(self):
-        list_loss = []
+        list_1st_term_loss = []
+        list_2nd_term_loss = []
+        list_chi2_loss = []
         list_q_values = []
 
         for _ in range(self.iter_per_episode):
 
-            data = self.replay_buffer.sample(self.batch_size)
-            data_expert = self.expert_dataset.sample(self.batch_size)
+            policy_batch = self.replay_buffer.sample(self.batch_size)
+            expert_batch = self.expert_dataset.sample(self.batch_size)
 
-            state_policy = data['states']
-            action_policy = data['actions']
-            state_expert = torch.tensor(data_expert.state, dtype=torch.float32, device=self.device)
-            action_expert = torch.tensor(data_expert.action, dtype=torch.long, device=self.device)
+            batch_state, batch_next_state, batch_action, batch_reward, batch_done, is_expert = get_concat_samples(policy_batch, expert_batch, self.device)
 
             # Calculate 1st term of loss: -E_(ρ_expert)[Q(s, a) - γV(s')]
-            current
-            
-            # Compute Q values
-            q_values = self.policy_net(data['states']).gather(1, data['actions']).squeeze(1)
+            q_values = self.policy_net(batch_state).gather(1, batch_action).squeeze(1)
 
             # Compute the expected Q values
             with torch.no_grad():
-                next_q_values = self.target_net(data['next_states']).max(1)[0].detach()
-                expected_q_values = data['rewards'].flatten() + (self.gamma * next_q_values * (1 - data['dones'].flatten()))
+                next_q_values = self.target_net(batch_next_state)
+                expected_q_values = self.gamma * next_q_values * (1 - batch_done.flatten())
 
             # Compute the loss
-            loss = self.criterion(q_values, expected_q_values)
+            reward = (q_values - expected_q_values)[is_expert]
+            loss = -(reward).mean()
+
+            # 2nd term for our loss (use expert and policy states): E_(ρ)[Q(s,a) - γV(s')]
+            value_loss = (self.policy_net(batch_state) - expected_q_values).mean()
+            loss += value_loss
+
+            # Use χ2 divergence (adds a extra term to the loss)
+            chi2_loss = 1/(4 * 0.5) * (reward**2).mean()
+            loss += chi2_loss
 
             # Optimize the model
             self.optimizer.zero_grad()
@@ -73,6 +79,8 @@ class IQLTrainer():
 
             # Store statistics
             list_q_values.append(q_values.mean().item())
-            list_loss.append(loss.item())
+            list_1st_term_loss.append(reward.mean().item())
+            list_2nd_term_loss.append(value_loss.item())
+            list_chi2_loss.append(chi2_loss.item())
 
-        return np.mean(list_loss), np.mean(list_q_values)
+        return np.mean(list_1st_term_loss), np.mean(list_2nd_term_loss), np.mean(list_chi2_loss), np.mean(list_q_values)

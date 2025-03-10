@@ -39,7 +39,7 @@ class ExpertDataset:
             h5f.create_dataset("dones", shape=(0,), maxshape=(None,), dtype=np.float32)
             self.dataset_initialized = True
     
-    def add(self,
+    def add_batch(self,
             states: np.ndarray,
             actions: np.ndarray,
             next_states: np.ndarray,
@@ -61,6 +61,35 @@ class ExpertDataset:
             h5f["actions"][num_existing:] = actions
             h5f["next_states"][num_existing:] = next_states
             h5f["dones"][num_existing:] = dones
+
+            self.size = h5f["states"].shape[0]
+
+        # Renommer le fichier avec le nombre total d'éléments
+        new_filename = f"{self.expert_folder}/{self.expert_name}_{self.size}.h5"
+        os.rename(self.expert_path, new_filename)
+        self.expert_path = new_filename
+
+    def add(self,
+            state: np.ndarray,
+            action: np.ndarray,
+            next_state: np.ndarray,
+            done: np.ndarray) -> None:
+        """Add a single state-action pair to the dataset."""
+        if not self.dataset_initialized:
+            self.create()
+
+        with h5py.File(self.expert_path, "a") as h5f:
+            num_existing = h5f["states"].shape[0]
+            
+            h5f["states"].resize((num_existing + 1,) + self.obs_shape)
+            h5f["actions"].resize((num_existing + 1,))
+            h5f["next_states"].resize((num_existing + 1,) + self.obs_shape)
+            h5f["dones"].resize((num_existing + 1,))
+
+            h5f["states"][num_existing] = state
+            h5f["actions"][num_existing] = action
+            h5f["next_states"][num_existing] = next_state
+            h5f["dones"][num_existing] = done
 
             self.size = h5f["states"].shape[0]
 
@@ -122,9 +151,13 @@ if __name__ == "__main__":
     next_states = np.random.rand(10, 4, 4)
     dones = np.random.rand(10)
 
+    # print(f"shapes: {states}, {actions}, {next_states}, {dones}")
     print(f"shapes: {states.shape}, {actions.shape}, {next_states.shape}, {dones.shape}")
 
     dataset.add(states, actions, next_states, dones)
 
-    data = dataset.load()
+    # data = dataset.load()
+    # print(data["states"], data["actions"], data["next_states"], data["dones"])
+
+    data = dataset.sample(5, torch.device("cpu"), to_torch=True)
     print(data["states"].shape, data["actions"].shape, data["next_states"].shape, data["dones"].shape)
