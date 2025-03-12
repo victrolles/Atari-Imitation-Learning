@@ -1,4 +1,36 @@
+import random
+
 import torch
+
+# Fonction pour équilibrer un dataset d'Experience
+def balance_experience_dataset(experiences: list) -> list:
+    # Compter les occurrences de chaque action
+    action_counts = {}
+    
+    for exp in experiences:
+        if exp.action not in action_counts:
+            action_counts[exp.action] = 0
+        action_counts[exp.action] += 1
+    
+    # Trouver l'action avec le moins d'occurrences
+    min_count = min(action_counts.values())
+    
+    # Créer un nouveau dataset équilibré
+    balanced_experiences = []
+    
+    # Pour chaque action, échantillonner au hasard pour ne garder que min_count éléments
+    for action in action_counts:
+        # Filtrer les éléments de cette action
+        action_items = [exp for exp in experiences if exp.action == action]
+        
+        # Si la classe a plus d'éléments que le minimum, échantillonner
+        if len(action_items) > min_count:
+            action_items = random.sample(action_items, min_count)
+        
+        # Ajouter les éléments échantillonnés ou tous les éléments si déjà équilibrés
+        balanced_experiences.extend(action_items)
+    
+    return balanced_experiences
 
 def get_concat_samples(policy_batch: dict, expert_batch: dict, device: torch.device):
     """Concatenate policy and expert samples into a single batch."""

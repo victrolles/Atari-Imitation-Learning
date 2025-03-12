@@ -6,12 +6,13 @@ import torch
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
-from atari_rl.iql.expert_dataset import ExpertDataset
+from atari_rl.iql.expert_dataset import ExpertDataset, Experience
+from atari_rl.iql.utils import balance_experience_dataset
 from atari_rl.rl.agent import Agent
 from atari_rl.rl.utils import prepost_frame
 from atari_rl.rl.frame_stacker import FrameStacker
 
-NUM_EPISODES = 200
+NUM_EPISODES = 100
 
 # Game parameters
 GAME_NAME = "Freeway-v5"
@@ -72,6 +73,7 @@ class Main():
         
         for i in range(NUM_EPISODES):
             print(f"Episode {i}, size: {len(self.expert_dataset)}")
+            list_experience = []
             done = False
             total_reward = 0
 
@@ -91,10 +93,7 @@ class Main():
                 next_preprocessed_frame = prepost_frame(next_frames, IMAGE_SIZE)
                 next_stacked_preprocessed_frames = self.frame_stacker.add(next_preprocessed_frame)
 
-                self.expert_dataset.add(stacked_preprocessed_frames,
-                    np.array(action, dtype=np.int32),
-                    next_stacked_preprocessed_frames,
-                    np.array(done, dtype=np.float32))
+                list_experience.append(Experience(stacked_preprocessed_frames, action, next_stacked_preprocessed_frames, done))
 
                 stacked_preprocessed_frames = next_stacked_preprocessed_frames.copy()
 
@@ -103,6 +102,9 @@ class Main():
 
             self.writer.add_scalar("charts/rewards", total_reward, i)
             self.writer.add_scalar("charts/size", len(self.expert_dataset), i)
+
+            balanced_list_experience = balance_experience_dataset(list_experience)
+            self.expert_dataset.add(balanced_list_experience)
 
         self.env.close()
 

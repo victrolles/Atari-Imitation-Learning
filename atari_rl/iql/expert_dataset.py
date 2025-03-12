@@ -6,12 +6,19 @@ import numpy as np
 import h5py
 import torch
 
+@dataclass
+class Experience:
+    state: np.ndarray
+    action: int
+    next_state: np.ndarray
+    done: bool
+
 class ExpertDataset:
     def __init__(self,
                  obs_shape: tuple,
                  num_actions: int,
                  expert_folder: str = "./results/datasets",
-                 expert_name: str = "expert_dataset") -> None:
+                 expert_name: str = "iql_expert_dataset") -> None:
         
         self.expert_folder = expert_folder
         self.expert_name = expert_name
@@ -39,57 +46,25 @@ class ExpertDataset:
             h5f.create_dataset("dones", shape=(0,), maxshape=(None,), dtype=np.float32)
             self.dataset_initialized = True
     
-    def add_batch(self,
-            states: np.ndarray,
-            actions: np.ndarray,
-            next_states: np.ndarray,
-            dones: np.ndarray) -> None:
+    def add(self, list_experience: list[Experience]) -> None:
         """Add a list of state-action pairs to the dataset."""
         if not self.dataset_initialized:
             self.create()
 
         with h5py.File(self.expert_path, "a") as h5f:
             num_existing = h5f["states"].shape[0]
-            num_new = states.shape[0]
+            num_new = len(list_experience)
             
             h5f["states"].resize((num_existing + num_new,) + self.obs_shape)
             h5f["actions"].resize((num_existing + num_new,))
             h5f["next_states"].resize((num_existing + num_new,) + self.obs_shape)
             h5f["dones"].resize((num_existing + num_new,))
 
-            h5f["states"][num_existing:] = states
-            h5f["actions"][num_existing:] = actions
-            h5f["next_states"][num_existing:] = next_states
-            h5f["dones"][num_existing:] = dones
-
-            self.size = h5f["states"].shape[0]
-
-        # Renommer le fichier avec le nombre total d'éléments
-        new_filename = f"{self.expert_folder}/{self.expert_name}_{self.size}.h5"
-        os.rename(self.expert_path, new_filename)
-        self.expert_path = new_filename
-
-    def add(self,
-            state: np.ndarray,
-            action: np.ndarray,
-            next_state: np.ndarray,
-            done: np.ndarray) -> None:
-        """Add a single state-action pair to the dataset."""
-        if not self.dataset_initialized:
-            self.create()
-
-        with h5py.File(self.expert_path, "a") as h5f:
-            num_existing = h5f["states"].shape[0]
-            
-            h5f["states"].resize((num_existing + 1,) + self.obs_shape)
-            h5f["actions"].resize((num_existing + 1,))
-            h5f["next_states"].resize((num_existing + 1,) + self.obs_shape)
-            h5f["dones"].resize((num_existing + 1,))
-
-            h5f["states"][num_existing] = state
-            h5f["actions"][num_existing] = action
-            h5f["next_states"][num_existing] = next_state
-            h5f["dones"][num_existing] = done
+            for i, exp in enumerate(list_experience):
+                h5f["states"][num_existing + i] = exp.state
+                h5f["actions"][num_existing + i] = exp.action
+                h5f["next_states"][num_existing + i] = exp.next_state
+                h5f["dones"][num_existing + i] = exp.done
 
             self.size = h5f["states"].shape[0]
 
@@ -115,6 +90,16 @@ class ExpertDataset:
             "next_states": next_states,
             "dones": dones
         }
+    
+    def load_actions(self, size: int = None) -> np.ndarray:
+        """Load all or part of the actions from the dataset."""
+        with h5py.File(self.expert_path, "r") as h5f:
+            if size is None or size > h5f["actions"].shape[0]:
+                size = h5f["actions"].shape[0]
+            
+            actions = h5f["actions"][:size]
+            
+        return actions
     
     def sample(self, batch_size: int, device: torch.device, to_torch = False) -> dict:
         """Sample a batch of state-action pairs randomly from the dataset."""
@@ -143,21 +128,29 @@ class ExpertDataset:
 
 # Example of use and verification  
 if __name__ == "__main__":
-    dataset = ExpertDataset((4, 4), 4)
+    dataset = ExpertDataset((2, 2), 4)
     dataset.create()
 
-    states = np.random.rand(10, 4, 4)
-    actions = np.random.randint(0, 4, 10)
-    next_states = np.random.rand(10, 4, 4)
-    dones = np.random.rand(10)
+    states = np.random.rand(5, 2, 2)
+    actions = np.random.randint(0, 4, 5)
+    next_states = np.random.rand(5, 2, 2)
+    dones = np.random.rand(5)
 
-    # print(f"shapes: {states}, {actions}, {next_states}, {dones}")
-    print(f"shapes: {states.shape}, {actions.shape}, {next_states.shape}, {dones.shape}")
+    experiences = [Experience(states[i], actions[i], next_states[i], dones[i]) for i in range(5)]
+    dataset.add(experiences)
 
-    dataset.add(states, actions, next_states, dones)
+    load = dataset.load()
+    
+    sample = dataset.sample(2, torch.device("cpu"), to_torch=True)
 
-    # data = dataset.load()
-    # print(data["states"], data["actions"], data["next_states"], data["dones"])
+    print("Inputs :")
+    for idx, experience in enumerate(experiences):
+        print(f"Experience {idx} : {experience}")
 
-    data = dataset.sample(5, torch.device("cpu"), to_torch=True)
-    print(data["states"].shape, data["actions"].shape, data["next_states"].shape, data["dones"].shape)
+    print("\nLoad :")
+    for key, value in load.items():
+        print(f"{key} : {value}")
+
+    print("\nSample :")
+    for key, value in sample.items():
+        print(f"{key} : {value}")
