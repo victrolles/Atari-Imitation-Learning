@@ -6,11 +6,12 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from atari_rl.il.expert_dataset import StateAction, ExpertDataset
+from atari_rl.il.utils import balance_dataset
 from atari_rl.rl.agent import Agent
 from atari_rl.rl.utils import prepost_frame
 from atari_rl.rl.frame_stacker import FrameStacker
 
-NUM_EPISODES = 80
+NUM_EPISODES = 200
 
 # Game parameters
 GAME_NAME = "Freeway-v5"
@@ -101,8 +102,8 @@ class Main():
             self.writer.add_scalar("charts/rewards", total_reward, i)
             self.writer.add_scalar("charts/size", len(self.expert_dataset), i)
 
-            self.expert_dataset.add(list_state_action)
-
+            balanced_list_state_action = balance_dataset(list_state_action)
+            self.expert_dataset.add(balanced_list_state_action)
         self.env.close()
 
 if __name__ == "__main__":

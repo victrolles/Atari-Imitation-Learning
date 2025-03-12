@@ -25,24 +25,24 @@ FRAME_STACK_SIZE = 4
 FRAME_SKIP_SIZE = 4
 
 # Imitation Learning parameters
-LEARNING_RATE = 1e-4
-EXPERT_NAME = "expert_dataset_163840"
+LEARNING_RATE = 4e-4
+EXPERT_NAME = "expert_dataset_239_102738"
 VAL_LOADED_SIZE = 1000
 LOADED_SIZE = 35000
 BATCH_SIZE = 256
-EPOCHS = 100
+EPOCHS = 200
 
 # Evaluation parameters
-MODEL_NAME = "DQN_Freeway-v5_290_10700.pt"
+MODEL_NAME = "IL_Freeway-v5_399/episode_80"
 SAVE_MODEL = True
-LOAD_MODEL = False
+LOAD_MODEL = True
 
 MAX_STEP_PER_EPISODE = 10000
 NUM_EPISODES_EVAL = 10
 EPSILON_EVAL = 0.05
 USE_DETERMINISTIC_EVAL = True
 USE_EPSILON_EVAL = True
-TEMPERATURE_EVAL = 1
+TEMPERATURE_EVAL = 1 
 
 class ILOnGym():
 
@@ -123,7 +123,7 @@ class ILOnGym():
             list_loss.append(loss.item())
 
         mean_loss = np.mean(list_loss)
-        self.writer.add_scalar("Training/Training loss", mean_loss, self.epoch)
+        self.writer.add_scalar("training/training_loss", mean_loss, self.epoch)
 
     def validation(self):
         self.agent.policy_net.eval()
@@ -153,7 +153,7 @@ class ILOnGym():
             total_correct += (outputs == labels).sum().item()
 
         accuracy = total_correct / total_samples
-        self.writer.add_scalar("Charts/Validation accuracy", accuracy, self.epoch)
+        self.writer.add_scalar("training/training_accuracy", accuracy, self.epoch)
 
     def eval(self, train_episode: int):
 
@@ -209,8 +209,8 @@ class ILOnGym():
             list_reward.append(total_reward)
             list_length.append(t)
 
-        self.writer.add_scalar("Charts/Eval reward", np.mean(list_reward), self.epoch)
-        self.writer.add_scalar("Charts/Eval length", np.mean(list_length), self.epoch)
+        self.writer.add_scalar("charts/eval_reward", np.mean(list_reward), self.epoch)
+        self.writer.add_scalar("charts/eval_length", np.mean(list_length), self.epoch)
 
         env_eval.close()
 

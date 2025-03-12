@@ -76,6 +76,16 @@ class ExpertDataset:
             
         return [StateAction(state, action) for state, action in zip(states, actions)]
     
+    def load_actions(self, size: int = None) -> np.ndarray:
+        """Load all or part of the actions from the dataset."""
+        with h5py.File(self.expert_path, "r") as h5f:
+            if size is None or size > h5f["actions"].shape[0]:
+                size = h5f["actions"].shape[0]
+            
+            actions = h5f["actions"][:size]
+            
+        return actions
+    
     def sample(self, batch_size: int) -> list[StateAction]:
         """Sample a batch of state-action pairs randomly from the dataset."""
         with h5py.File(self.expert_path, "r") as h5f:
