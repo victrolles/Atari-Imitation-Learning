@@ -2,12 +2,14 @@ import torch
 
 def get_concat_samples(policy_batch: dict, expert_batch: dict, device: torch.device):
     """Concatenate policy and expert samples into a single batch."""
+
+    # Concatenate the samples
     batch_state = torch.cat([policy_batch['states'], expert_batch['states']], dim=0)
     batch_next_state = torch.cat([policy_batch['next_states'], expert_batch['next_states']], dim=0)
-    batch_action = torch.cat([policy_batch['actions'], expert_batch['actions']], dim=0)
-    batch_reward = torch.cat([policy_batch['rewards'], torch.zeros_like(expert_batch['dones'], dtype=torch.float32, device=device)], dim=0)
-    batch_done = torch.cat([policy_batch['dones'], expert_batch['dones']], dim=0)
-    is_expert = torch.cat([torch.zeros_like(policy_batch['dones'], dtype=torch.bool, device=device),
+    batch_action = torch.cat([policy_batch['actions'].squeeze(1), expert_batch['actions']], dim=0)
+    batch_reward = torch.cat([policy_batch['rewards'].squeeze(1), torch.zeros_like(expert_batch['dones'], dtype=torch.float32, device=device)], dim=0)
+    batch_done = torch.cat([policy_batch['dones'].squeeze(1), expert_batch['dones']], dim=0)
+    is_expert = torch.cat([torch.zeros_like(expert_batch['dones'], dtype=torch.bool, device=device),
                             torch.ones_like(expert_batch['dones'], dtype=torch.bool, device=device)], dim=0)
     
     # Shuffle the batch

@@ -12,7 +12,7 @@ from atari_rl.rl.agent import Agent
 from atari_rl.rl.utils import prepost_frame, scale_reward
 from atari_rl.rl.frame_stacker import FrameStacker
 from atari_rl.rl.replay_buffer import ReplayBuffer
-from atari_rl.il.expert_dataset import ExpertDataset
+from atari_rl.iql.expert_dataset import ExpertDataset
 
 # Game parameters
 GAME_NAME = "Freeway-v5"
@@ -25,7 +25,7 @@ FRAME_STACK_SIZE = 4
 FRAME_SKIP_SIZE = 4
 
 # DQN parameters
-EXPERT_NAME = "expert_dataset_204800"
+EXPERT_NAME = "iql_expert_dataset_841_16292"
 GAMMA = 0.99
 LEARNING_RATE = 1e-4
 BUFFER_SIZE = 25000
@@ -42,9 +42,9 @@ USE_DETERMINISTIC = True
 TEMPERATURE = 1
 
 # Evaluation parameters
-MODEL_NAME = "DQN_Freeway-v5_24/episode_2500"
+MODEL_NAME = "DQN_Freeway-v5_8/episode_15250"
 SAVE_MODEL = True
-LOAD_MODEL = True
+LOAD_MODEL = False
 EVAL_RATE = 250
 
 NUM_EPISODES_EVAL = 10

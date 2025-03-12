@@ -42,7 +42,7 @@ TEMPERATURE = 1
 # Evaluation parameters
 MODEL_NAME = "DQN_Freeway-v5_24/episode_2500"
 SAVE_MODEL = True
-LOAD_MODEL = True
+LOAD_MODEL = False
 EVAL_RATE = 250
 
 NUM_EPISODES_EVAL = 10
