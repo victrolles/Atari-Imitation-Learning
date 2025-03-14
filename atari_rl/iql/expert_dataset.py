@@ -30,6 +30,9 @@ class ExpertDataset:
         self.dataset_initialized = False
         self.size = 0
 
+        self.loaded_dataset = None
+        self.loaded_size = 0
+
     def __len__(self):
         return self.size
         
@@ -73,7 +76,7 @@ class ExpertDataset:
         os.rename(self.expert_path, new_filename)
         self.expert_path = new_filename
     
-    def load(self, size: int = None) -> dict:
+    def load(self, size: int = None) -> None:
         """Load all or part of the dataset."""
         with h5py.File(self.expert_path, "r") as h5f:
             if size is None or size > h5f["states"].shape[0]:
@@ -84,12 +87,22 @@ class ExpertDataset:
             next_states = h5f["next_states"][:size]
             dones = h5f["dones"][:size]
 
-        return {
-            "states": states,
-            "actions": actions,
-            "next_states": next_states,
-            "dones": dones
-        }
+            self.loaded_size = size
+            print(f"Loaded {size} samples from {self.expert_path}.")
+
+            self.loaded_dataset = {
+                "states": states,
+                "actions": actions,
+                "next_states": next_states,
+                "dones": dones
+            }
+
+        # return {
+        #     "states": states,
+        #     "actions": actions,
+        #     "next_states": next_states,
+        #     "dones": dones
+        # }
     
     def load_actions(self, size: int = None) -> np.ndarray:
         """Load all or part of the actions from the dataset."""
@@ -101,23 +114,35 @@ class ExpertDataset:
             
         return actions
     
-    def sample(self, batch_size: int, device: torch.device, to_torch = False) -> dict:
+    def sample(self, batch_size: int, device: torch.device, to_torch = False, from_loaded = False) -> dict:
         """Sample a batch of state-action pairs randomly from the dataset."""
-        with h5py.File(self.expert_path, "r") as h5f:
 
-            num_samples = h5f["states"].shape[0]
-            indices = sorted(random.sample(range(num_samples), batch_size))
+        
 
-            states = h5f["states"][indices]
-            actions = h5f["actions"][indices]
-            next_states = h5f["next_states"][indices]
-            dones = h5f["dones"][indices]
+        if from_loaded and self.loaded_dataset is None:
+            raise ValueError("No dataset loaded. Use the load() method first.")
+        elif from_loaded:
+            indices = sorted(random.sample(range(self.loaded_size), batch_size))
+            states = self.loaded_dataset["states"][indices]
+            actions = self.loaded_dataset["actions"][indices]
+            next_states = self.loaded_dataset["next_states"][indices]
+            dones = self.loaded_dataset["dones"][indices]
+        else:
+            with h5py.File(self.expert_path, "r") as h5f:
 
-            if to_torch:
-                states = torch.tensor(states, dtype=torch.float32, device=device)
-                actions = torch.tensor(actions, dtype=torch.long, device=device)
-                next_states = torch.tensor(next_states, dtype=torch.float32, device=device)
-                dones = torch.tensor(dones, dtype=torch.float32, device=device)
+                num_samples = h5f["states"].shape[0]
+                indices = sorted(random.sample(range(num_samples), batch_size))
+
+                states = h5f["states"][indices]
+                actions = h5f["actions"][indices]
+                next_states = h5f["next_states"][indices]
+                dones = h5f["dones"][indices]
+
+        if to_torch:
+            states = torch.tensor(states, dtype=torch.float32, device=device)
+            actions = torch.tensor(actions, dtype=torch.long, device=device)
+            next_states = torch.tensor(next_states, dtype=torch.float32, device=device)
+            dones = torch.tensor(dones, dtype=torch.float32, device=device)
             
         return {
             "states": states,

@@ -1,9 +1,6 @@
-import random
-
 import torch.optim as optim
 import torch.nn as nn
 import torch
-import numpy as np
 
 from atari_rl.rl.replay_buffer import ReplayBuffer
 from atari_rl.dqn.dqn_model import DQNModel
@@ -41,15 +38,18 @@ class IQLTrainer():
         self.criterion = nn.MSELoss()
 
     def train(self):
-        list_1st_term_loss = []
-        list_2nd_term_loss = []
-        list_chi2_loss = []
-        list_q_values = []
+        stats = {
+            "reward": 0,
+            "loss": 0,
+            "value_loss": 0,
+            "value_loss2": 0,
+            "q_values": 0
+        }
 
         for _ in range(self.iter_per_episode):
 
-            policy_batch = self.replay_buffer.sample(self.batch_size)
-            expert_batch = self.expert_dataset.sample(self.batch_size, self.device, True)
+            policy_batch = self.replay_buffer.sample(int(self.batch_size/2))
+            expert_batch = self.expert_dataset.sample(int(self.batch_size/2), self.device, True, True)
 
             batch_state, batch_next_state, batch_action, batch_reward, batch_done, is_expert = get_concat_samples(policy_batch, expert_batch, self.device)
 
@@ -68,25 +68,25 @@ class IQLTrainer():
 
             # Calculate 1st term of loss: -E_(ρ_expert)[Q(s, a) - γV(s')]    curr_Qs = [0.1, 0.1, 0.3, (0.2)], next_Qs = [0.2, 0.1, 0.05, 0.03]
             reward = (current_q_values - expected_q_values)[is_expert]
+            stats["reward"] += reward.mean().item() / self.iter_per_episode
             loss = -(reward).mean()
+            stats["q_values"] += current_q_values.mean().item() / self.iter_per_episode
+            stats["value_loss"] += loss / self.iter_per_episode
 
             # 2nd term for our loss (use expert and policy states): E_(ρ)[Q(s,a) - γV(s')]
             value_loss = (current_values - expected_q_values).mean()
+            stats["value_loss2"] += value_loss.item() / self.iter_per_episode
             loss += value_loss
 
+            stats["loss"] += loss.item() / self.iter_per_episode
+
             # Use χ2 divergence (adds a extra term to the loss)
-            chi2_loss = 1/(4 * self.alpha) * (reward**2).mean()
-            loss += chi2_loss
+            # chi2_loss = 1/(4 * self.alpha) * (reward**2).mean()
+            # loss += chi2_loss
 
             # Optimize the model
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
-            # Store statistics
-            list_q_values.append(current_q_values.mean().item())
-            list_1st_term_loss.append(reward.mean().item())
-            list_2nd_term_loss.append(value_loss.item())
-            list_chi2_loss.append(chi2_loss.item())
-
-        return np.mean(list_1st_term_loss), np.mean(list_2nd_term_loss), np.mean(list_chi2_loss), np.mean(list_q_values)
+        return stats

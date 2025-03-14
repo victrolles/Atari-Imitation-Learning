@@ -25,14 +25,14 @@ FRAME_STACK_SIZE = 4
 FRAME_SKIP_SIZE = 4
 
 # DQN parameters
-EXPERT_NAME = "iql_expert_dataset_660_50538"
+EXPERT_NAME = "iql_expert_dataset_731_103176"
 GAMMA = 0.99
 LEARNING_RATE = 1e-4
 BUFFER_SIZE = 50000
 BATCH_SIZE = 32
 EPSILON_START = 1.0
-EPSILON_END = 0.3
-EPSILON_DECAY = 0.998
+EPSILON_END = 0.05
+EPSILON_DECAY = 0.999
 TARGET_UPDATE = 3
 MAX_STEP_PER_EPISODE = 2500
 ITER_PER_EPISODE = 175
@@ -80,6 +80,7 @@ class DQNOnGym():
                                           self.device)
         
         self.expert_dataset = ExpertDataset(obs_shape, NUM_ACTIONS, expert_name=EXPERT_NAME)
+        self.expert_dataset.load()
         
         self.agent = Agent(obs_shape,
                            NUM_ACTIONS,
@@ -143,7 +144,7 @@ class DQNOnGym():
                     break
 
             # Train the model
-            mean_q_value, mean_1st_term_loss, mean_2nd_term_loss, mean_chi2_loss = self.trainer.train()
+            stats = self.trainer.train()
             epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
             if episode % TARGET_UPDATE == 0:
                 self.agent.target_net.load_state_dict(self.agent.policy_net.state_dict())
@@ -158,11 +159,12 @@ class DQNOnGym():
             self.writer.add_scalar("charts/training_iter", training_iter, episode)
 
             self.writer.add_scalar("training/epsilon", epsilon, episode)
-            self.writer.add_scalar("training/mean_q_value", mean_q_value, episode)
-            self.writer.add_scalar("training/mean_1st_term_loss", mean_1st_term_loss, episode)
-            self.writer.add_scalar("training/mean_2nd_term_loss", mean_2nd_term_loss, episode)
-            self.writer.add_scalar("training/mean_chi2_loss", mean_chi2_loss, episode)
             self.writer.add_scalar("training/buffer_size", len(self.replay_buffer), episode)
+            self.writer.add_scalar("training/value_loss", stats["value_loss"], episode)
+            self.writer.add_scalar("training/value_loss2", stats["value_loss2"], episode)
+            self.writer.add_scalar("training/loss", stats["loss"], episode)
+            self.writer.add_scalar("training/q_values", stats["q_values"], episode)
+            self.writer.add_scalar("training/reward", stats["reward"], episode)
 
             if episode % EVAL_RATE == 0:
                 self.eval_loop(episode)

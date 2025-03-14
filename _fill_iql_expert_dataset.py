@@ -12,7 +12,7 @@ from atari_rl.rl.agent import Agent
 from atari_rl.rl.utils import prepost_frame
 from atari_rl.rl.frame_stacker import FrameStacker
 
-NUM_EPISODES = 100
+NUM_EPISODES = 200
 
 # Game parameters
 GAME_NAME = "Freeway-v5"
