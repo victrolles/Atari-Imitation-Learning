@@ -27,8 +27,8 @@ FRAME_SKIP_SIZE = 4
 # DQN parameters
 EXPERT_NAME = "iql_expert_dataset_731_103176"
 GAMMA = 0.99
-LEARNING_RATE = 1e-4
-BUFFER_SIZE = 50000
+LEARNING_RATE = 1e-5
+BUFFER_SIZE = 20000
 BATCH_SIZE = 32
 EPSILON_START = 1.0
 EPSILON_END = 0.05
@@ -80,7 +80,7 @@ class DQNOnGym():
                                           self.device)
         
         self.expert_dataset = ExpertDataset(obs_shape, NUM_ACTIONS, expert_name=EXPERT_NAME)
-        self.expert_dataset.load()
+        self.expert_dataset.load(42000)
         
         self.agent = Agent(obs_shape,
                            NUM_ACTIONS,
