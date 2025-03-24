@@ -3,6 +3,7 @@ import random
 import os
 
 import torch
+from torch.distributions import Categorical
 
 from atari_rl.dqn.dqn_model import DQNModel
 
@@ -45,7 +46,9 @@ class Agent():
                 if deterministic:
                     output = torch.argmax(output, dim=1)
                 else:
-                    output = torch.multinomial(torch.softmax(output / temperature, dim=1), 1)
+                    print("etst : ok")
+                    output = torch.softmax(output / temperature, dim=1) # on obtaining the probabilities of each action
+                    output = Categorical(output).sample() # on sampling from the distribution
 
                 return int(output.cpu().item())
 

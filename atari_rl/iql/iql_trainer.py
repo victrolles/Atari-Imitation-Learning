@@ -66,22 +66,22 @@ class IQLTrainer():
                 next_q_values = self.alpha * torch.logsumexp(self.target_net(batch_next_state) / self.alpha, dim=1, keepdim=True)
                 expected_q_values = (1 - batch_done) * self.gamma * next_q_values
 
-                # Apply clipping to prevent extreme values
-                expected_q_values = torch.clamp(expected_q_values, -10.0, 10.0)
+                # # Apply clipping to prevent extreme values
+                # expected_q_values = torch.clamp(expected_q_values, -10.0, 10.0)
 
             # Calculate 1st term of loss: -E_(ρ_expert)[Q(s, a) - γV(s')]
             reward = (current_q_values - expected_q_values)[is_expert]
-            reward_clipped = torch.clamp(reward, -10.0, 10.0)  # Prevent extreme values
+            # reward_clipped = torch.clamp(reward, -10.0, 10.0)  # Prevent extreme values
             
             stats["reward"] += reward.mean().item() / self.iter_per_episode
-            loss = -(reward_clipped).mean()
+            loss = -(reward).mean()
             stats["q_values"] += current_q_values.mean().item() / self.iter_per_episode
             stats["value_loss"] += loss / self.iter_per_episode
 
             # 2nd term for our loss (use expert and policy states): E_(ρ)[Q(s,a) - γV(s')]
             value_diff = (current_values - expected_q_values)
-            value_diff_clipped = torch.clamp(value_diff, -10.0, 10.0)  # Prevent extreme values
-            value_loss = value_diff_clipped.mean()
+            # value_diff_clipped = torch.clamp(value_diff, -10.0, 10.0)  # Prevent extreme values
+            value_loss = value_diff.mean()
             
             stats["value_loss2"] += value_loss.item() / self.iter_per_episode
             loss += value_loss
@@ -89,11 +89,9 @@ class IQLTrainer():
             stats["loss"] += loss.item() / self.iter_per_episode
 
             # Use χ2 divergence (adds a extra term to the loss)
-            chi2_loss = 1/(4 * self.alpha) * (reward_clipped**2).mean()
+            reward = (current_q_values - expected_q_values)
+            chi2_loss = 1/(4 * self.alpha) * (reward**2).mean()
             loss += chi2_loss
-            
-            # Apply gradient clipping
-            torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
 
             # Optimize the model
             self.optimizer.zero_grad()

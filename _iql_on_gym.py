@@ -27,7 +27,7 @@ FRAME_SKIP_SIZE = 4
 # DQN parameters
 EXPERT_NAME = "iql_expert_dataset_731_103176"
 GAMMA = 0.99
-LEARNING_RATE = 1e-5
+LEARNING_RATE = 1e-6
 BUFFER_SIZE = 20000
 BATCH_SIZE = 32
 EPSILON_START = 1.0
@@ -37,8 +37,9 @@ TARGET_UPDATE = 3
 MAX_STEP_PER_EPISODE = 2500
 ITER_PER_EPISODE = 175
 
-NUM_EPISODES = 3000
-USE_DETERMINISTIC = True
+NUM_EPISODES = 10000
+USE_DETERMINISTIC = False
+USE_EPSILON = False
 TEMPERATURE = 1
 
 # Evaluation parameters
@@ -49,8 +50,8 @@ EVAL_RATE = 50
 
 NUM_EPISODES_EVAL = 10
 EPSILON_EVAL = 0.05
-USE_DETERMINISTIC_EVAL = True
-USE_EPSILON_EVAL = True
+USE_DETERMINISTIC_EVAL = False
+USE_EPSILON_EVAL = False
 TEMPERATURE_EVAL = 1
 
 class DQNOnGym():
@@ -80,7 +81,7 @@ class DQNOnGym():
                                           self.device)
         
         self.expert_dataset = ExpertDataset(obs_shape, NUM_ACTIONS, expert_name=EXPERT_NAME)
-        self.expert_dataset.load(42000)
+        self.expert_dataset.load(20000)
         
         self.agent = Agent(obs_shape,
                            NUM_ACTIONS,
@@ -120,9 +121,13 @@ class DQNOnGym():
             # experiment on the environment to collect experiences
             for t in range(MAX_STEP_PER_EPISODE):
                 # Select the action
-                action = self.agent.select_action(stacked_preprocessed_frames,
-                                                  epsilon,
-                                                  )
+                action = self.agent.select_action(
+                    stacked_preprocessed_frames,
+                    epsilon,
+                    training=USE_EPSILON,
+                    deterministic=USE_DETERMINISTIC,
+                    temperature=TEMPERATURE
+                )
 
                 # Perform the action
                 next_frame, reward, done, truncated, _ = env.step(action)
@@ -205,11 +210,13 @@ class DQNOnGym():
             # experiment on the environment to collect experiences
             for t in range(MAX_STEP_PER_EPISODE):
                 # Select the action
-                action = self.agent.select_action(stacked_preprocessed_frames,
-                                                  EPSILON_EVAL,
-                                                  training=USE_EPSILON_EVAL,
-                                                  deterministic=USE_DETERMINISTIC_EVAL,
-                                                  temperature=TEMPERATURE_EVAL)
+                action = self.agent.select_action(
+                    stacked_preprocessed_frames,
+                    EPSILON_EVAL,
+                    training=USE_EPSILON_EVAL,
+                    deterministic=USE_DETERMINISTIC_EVAL,
+                    temperature=TEMPERATURE_EVAL
+                )
 
                 # Perform the action
                 next_frame, reward, done, truncated, _ = env_eval.step(action)
