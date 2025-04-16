@@ -25,7 +25,7 @@ FRAME_STACK_SIZE = 4
 FRAME_SKIP_SIZE = 4
 
 # DQN parameters
-EXPERT_NAME = "iql_expert_dataset_731_103176"
+EXPERT_NAME = "iql_expert_dataset_270_103464"
 GAMMA = 0.99
 LEARNING_RATE = 1e-6
 BUFFER_SIZE = 20000
@@ -139,7 +139,7 @@ class DQNOnGym():
 
                 self.replay_buffer.add(stacked_preprocessed_frames,
                                        np.array(action, dtype=np.int32),
-                                       np.array(scale_reward(reward), dtype=np.float32),
+                                       np.array(reward, dtype=np.float32),
                                        next_stacked_preprocessed_frames,
                                        np.array(done, dtype=np.float32))
                 

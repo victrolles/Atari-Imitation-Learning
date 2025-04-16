@@ -14,7 +14,7 @@ from atari_rl.rl.frame_stacker import FrameStacker
 from atari_rl.rl.replay_buffer import ReplayBuffer
 
 # Game parameters
-GAME_NAME = "Freeway-v5"
+GAME_NAME = "MsPacman-v5" #"Freeway-v5"
 RL_ALGORITHM = "DQN"
 NUM_ACTIONS = 3
 
@@ -128,7 +128,7 @@ class DQNOnGym():
 
                 self.replay_buffer.add(stacked_preprocessed_frames,
                                        np.array(action, dtype=np.int32),
-                                       np.array(scale_reward(reward), dtype=np.float32),
+                                       np.array(reward, dtype=np.float32),
                                        next_stacked_preprocessed_frames,
                                        np.array(done, dtype=np.float32))
                 

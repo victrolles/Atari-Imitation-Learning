@@ -46,7 +46,6 @@ class Agent():
                 if deterministic:
                     output = torch.argmax(output, dim=1)
                 else:
-                    print("etst : ok")
                     output = torch.softmax(output / temperature, dim=1) # on obtaining the probabilities of each action
                     output = Categorical(output).sample() # on sampling from the distribution
 

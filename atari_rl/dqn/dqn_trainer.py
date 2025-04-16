@@ -32,7 +32,7 @@ class DQNTrainer():
         self.device = device
 
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.SmoothL1Loss()
 
     def train(self):
         list_loss = []
